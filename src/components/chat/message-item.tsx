@@ -3,6 +3,7 @@
 import type { UIMessage } from "ai";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { AgentLabel, AGENT_COLORS, type AgentKey } from "@/components/chat/agent-label";
 
 interface MessageItemProps {
   message: UIMessage;
@@ -28,6 +29,13 @@ function extractAgentLabel(message: UIMessage): string | null {
   return null;
 }
 
+function getAgentKey(toolName: string): AgentKey {
+  if (toolName === "call_actor") return "actor";
+  if (toolName === "call_scribe") return "scribe";
+  if (toolName === "call_archivist") return "archivist";
+  return "gm";
+}
+
 function renderParts(message: UIMessage) {
   if (!message.parts || message.parts.length === 0) {
     return null;
@@ -43,6 +51,41 @@ function renderParts(message: UIMessage) {
     }
     if (part.type.startsWith("data-")) {
       return null;
+    }
+    if (part.type === "step-start") {
+      return null;
+    }
+    if (part.type === "dynamic-tool") {
+      const dp = part as { toolName?: string; state?: string; output?: string; input?: unknown };
+      const toolName = dp.toolName ?? "";
+      const state = dp.state ?? "";
+      const agentKey = getAgentKey(toolName);
+
+      if (state === "output-available") {
+        return (
+          <div key={i} className="flex flex-col gap-1">
+            <AgentLabel agent={agentKey} />
+            {dp.output && (
+              <span className="whitespace-pre-wrap text-sm">{String(dp.output)}</span>
+            )}
+          </div>
+        );
+      }
+
+      if (state === "output-error") {
+        return (
+          <div key={i} className="flex flex-col gap-1">
+            <AgentLabel agent={agentKey} />
+            <span className="text-sm text-destructive">Error</span>
+          </div>
+        );
+      }
+
+      return (
+        <div key={i} className="flex items-center gap-1.5">
+          <AgentLabel agent={agentKey} isActive={true} />
+        </div>
+      );
     }
     return null;
   });

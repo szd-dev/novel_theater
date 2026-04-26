@@ -2,6 +2,7 @@ import { join } from "node:path";
 import type { Session } from "@openai/agents";
 import { FileSession } from "./file-session";
 import type { StorySession } from "./types";
+import type { ExecutionLog } from "./execution-log";
 
 const sessionsDir = join(process.cwd(), ".sessions");
 
@@ -12,6 +13,7 @@ export function createStorySession(threadId: string): StorySession {
     threadId,
     gmSession: new FileSession({ storageDir: sessionsDir, sessionId: `gm-${threadId}` }),
     characterSessions: new Map(),
+    executionLogs: [],
   };
   sessions.set(threadId, session);
   return session;
@@ -30,6 +32,19 @@ export function getCharacterSession(threadId: string, characterName: string): Se
   const charSession = new FileSession({ storageDir: sessionsDir, sessionId: `char-${threadId}-${characterName}` });
   storySession.characterSessions.set(characterName, charSession);
   return charSession;
+}
+
+export function addExecutionLog(threadId: string, log: ExecutionLog): void {
+  const session = getStorySession(threadId);
+  session.executionLogs.push(log);
+}
+
+export function getExecutionLogs(threadId: string): ExecutionLog[] {
+  return getStorySession(threadId).executionLogs;
+}
+
+export function getExecutionLog(threadId: string, logId: string): ExecutionLog | undefined {
+  return getStorySession(threadId).executionLogs.find(log => log.id === logId);
 }
 
 export function clearStorySession(threadId: string): void {

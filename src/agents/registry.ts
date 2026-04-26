@@ -4,8 +4,85 @@ import { actorAgent } from './actor';
 import { scribeAgent } from './scribe';
 import { archivistAgent } from './archivist';
 import { initStoryTool } from '@/tools/story-tools';
+import { getCharacterSession, addExecutionLog } from '@/session/manager';
+import type { ExecutionLog } from '@/session/execution-log';
+import type { Session, AgentInputItem } from '@openai/agents';
 
-// Register actor as a tool for GM
+let currentThreadId: string | undefined;
+
+export function setCurrentThreadId(threadId: string | undefined): void {
+  currentThreadId = threadId;
+}
+
+class DynamicCharacterSession implements Session {
+  private characterName: string;
+
+  constructor(characterName: string) {
+    this.characterName = characterName;
+  }
+
+  private resolve(): Session {
+    if (!currentThreadId) {
+      throw new Error('currentThreadId not set');
+    }
+    return getCharacterSession(currentThreadId, this.characterName);
+  }
+
+  async getSessionId(): Promise<string> {
+    return this.resolve().getSessionId();
+  }
+
+  async getItems(limit?: number): Promise<AgentInputItem[]> {
+    return this.resolve().getItems(limit);
+  }
+
+  async addItems(items: AgentInputItem[]): Promise<void> {
+    return this.resolve().addItems(items);
+  }
+
+  async popItem(): Promise<AgentInputItem | undefined> {
+    return this.resolve().popItem();
+  }
+
+  async clearSession(): Promise<void> {
+    return this.resolve().clearSession();
+  }
+}
+
+function extractToolCalls(newItems: { type: string; rawItem?: { name?: string } }[]): string[] {
+  return newItems
+    .filter((item): item is { type: string; rawItem?: { name?: string } } => item.type === 'tool_call_item')
+    .map(item => item.rawItem?.name ?? 'unknown');
+}
+
+function buildExecutionLog(
+  agentName: string,
+  input: string,
+  result: {
+    finalOutput?: unknown;
+    agentToolInvocation?: { toolCallId?: string };
+    newItems?: { type: string; rawItem?: { name?: string } }[];
+    rawResponses?: { usage?: { inputTokens: number; outputTokens: number } }[];
+  },
+): ExecutionLog | null {
+  if (!currentThreadId) return null;
+  return {
+    id: crypto.randomUUID(),
+    agentName,
+    toolCallId: result.agentToolInvocation?.toolCallId,
+    input,
+    output: String(result.finalOutput ?? ''),
+    toolCalls: result.newItems ? extractToolCalls(result.newItems) : undefined,
+    timestamp: Date.now(),
+    tokenUsage: result.rawResponses?.length
+      ? {
+          inputTokens: result.rawResponses.reduce((sum, r) => sum + (r.usage?.inputTokens ?? 0), 0),
+          outputTokens: result.rawResponses.reduce((sum, r) => sum + (r.usage?.outputTokens ?? 0), 0),
+        }
+      : undefined,
+  };
+}
+
 const callActorTool = actorAgent.asTool({
   toolName: 'call_actor',
   toolDescription:
@@ -16,7 +93,12 @@ const callActorTool = actorAgent.asTool({
       .string()
       .describe('场景指示，告诉 Actor 角色应该做什么、面对什么情境'),
   }),
+  runOptions: {
+    session: new DynamicCharacterSession('actor'),
+  },
   customOutputExtractor: (result) => {
+    const log = buildExecutionLog('Actor', 'character + direction', result as any);
+    if (log && currentThreadId) addExecutionLog(currentThreadId, log);
     return String(result.finalOutput ?? '');
   },
 });
@@ -35,7 +117,12 @@ const callScribeTool = scribeAgent.asTool({
       .string()
       .describe('场景上下文——地点、时间、氛围描述'),
   }),
+  runOptions: {
+    session: new DynamicCharacterSession('scribe'),
+  },
   customOutputExtractor: (result) => {
+    const log = buildExecutionLog('Scribe', 'interactionLog + sceneContext', result as any);
+    if (log && currentThreadId) addExecutionLog(currentThreadId, log);
     return String(result.finalOutput ?? '');
   },
 });
@@ -52,7 +139,12 @@ const callArchivistTool = archivistAgent.asTool({
       ),
     literaryText: z.string().describe('Scribe 产出的完整文学文本'),
   }),
+  runOptions: {
+    session: new DynamicCharacterSession('archivist'),
+  },
   customOutputExtractor: (result) => {
+    const log = buildExecutionLog('Archivist', 'narrativeSummary + literaryText', result as any);
+    if (log && currentThreadId) addExecutionLog(currentThreadId, log);
     return String(result.finalOutput ?? '');
   },
 });

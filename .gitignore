@@ -42,5 +42,7 @@ next-env.d.ts
 
 # novel theater
 .novel/
+.sessions/
+.archive/
 .playwright-mcp
 
