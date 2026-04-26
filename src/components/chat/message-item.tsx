@@ -4,8 +4,8 @@ import { useState } from "react";
 import type { UIMessage } from "ai";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { AgentLabel, AGENT_COLORS, type AgentKey } from "@/components/chat/agent-label";
-import { splitBySteps, type Segment } from "@/components/chat/message-segments";
+import { AgentLabel, type AgentKey } from "@/components/chat/agent-label";
+import { splitBySteps } from "@/components/chat/message-segments";
 import { SessionModal } from "@/components/chat/session-modal";
 
 interface MessageItemProps {
