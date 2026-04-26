@@ -4,6 +4,7 @@ import type { UIMessage } from "ai";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { AgentLabel, AGENT_COLORS, type AgentKey } from "@/components/chat/agent-label";
+import { splitBySteps, type Segment } from "@/components/chat/message-segments";
 
 interface MessageItemProps {
   message: UIMessage;
@@ -91,32 +92,80 @@ function renderParts(message: UIMessage) {
   });
 }
 
+function renderSegmentParts(parts: UIMessage["parts"]) {
+  if (!parts || parts.length === 0) return null;
+  return parts.map((part, i) => {
+    if (part.type === "text") {
+      return (
+        <span key={i} className="whitespace-pre-wrap">
+          {part.text}
+        </span>
+      );
+    }
+    if (part.type.startsWith("data-")) return null;
+    if (part.type === "step-start") return null;
+    if (part.type === "dynamic-tool") {
+      const dp = part as { toolName?: string; state?: string; output?: string };
+      if (dp.state === "output-available" && dp.output) {
+        return (
+          <span key={i} className="whitespace-pre-wrap text-sm">
+            {String(dp.output)}
+          </span>
+        );
+      }
+      if (dp.state === "output-error") {
+        return (
+          <span key={i} className="text-sm text-destructive">Error</span>
+        );
+      }
+      return null;
+    }
+    return null;
+  });
+}
+
 export function MessageItem({ message }: MessageItemProps) {
   const isUser = message.role === "user";
   const agentLabel = extractAgentLabel(message);
+  const segments = !isUser ? splitBySteps(message) : [];
 
-  return (
-    <div
-      className={cn(
-        "flex w-full flex-col gap-1",
-        isUser ? "items-end" : "items-start"
-      )}
-    >
-      {agentLabel && (
-        <Badge variant="secondary" className="text-[10px] font-normal">
-          {agentLabel}
-        </Badge>
-      )}
+  if (isUser || segments.length <= 1) {
+    return (
       <div
         className={cn(
-          "max-w-[80%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed",
-          isUser
-            ? "bg-primary text-primary-foreground"
-            : "bg-muted text-foreground"
+          "flex w-full flex-col gap-1",
+          isUser ? "items-end" : "items-start"
         )}
       >
-        {renderParts(message)}
+        {agentLabel && (
+          <Badge variant="secondary" className="text-[10px] font-normal">
+            {agentLabel}
+          </Badge>
+        )}
+        <div
+          className={cn(
+            "max-w-[80%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed",
+            isUser
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-foreground"
+          )}
+        >
+          {renderParts(message)}
+        </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="flex w-full flex-col items-start gap-2">
+      {segments.map((segment, i) => (
+        <div key={i} className="flex flex-col gap-1">
+          <AgentLabel agent={segment.agent} />
+          <div className="max-w-[80%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed bg-muted text-foreground">
+            {renderSegmentParts(segment.parts)}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
