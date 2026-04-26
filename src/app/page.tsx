@@ -51,7 +51,7 @@ export default function Home() {
   return (
     <ChatLayout>
       <SceneIndicator threadId={threadId} />
-      <MessageList messages={messages} status={status} />
+      <MessageList messages={messages} status={status} threadId={threadId} />
       <ChatInput
         input={input}
         onInputChange={setInput}

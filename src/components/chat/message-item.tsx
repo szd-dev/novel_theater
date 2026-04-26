@@ -1,13 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import type { UIMessage } from "ai";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { AgentLabel, AGENT_COLORS, type AgentKey } from "@/components/chat/agent-label";
 import { splitBySteps, type Segment } from "@/components/chat/message-segments";
+import { SessionModal } from "@/components/chat/session-modal";
 
 interface MessageItemProps {
   message: UIMessage;
+  threadId?: string;
 }
 
 function extractAgentLabel(message: UIMessage): string | null {
@@ -124,10 +127,12 @@ function renderSegmentParts(parts: UIMessage["parts"]) {
   });
 }
 
-export function MessageItem({ message }: MessageItemProps) {
+export function MessageItem({ message, threadId }: MessageItemProps) {
   const isUser = message.role === "user";
   const agentLabel = extractAgentLabel(message);
   const segments = !isUser ? splitBySteps(message) : [];
+  const [showSession, setShowSession] = useState(false);
+  const hasToolCalls = message.parts.some((p) => p.type === "dynamic-tool");
 
   if (isUser || segments.length <= 1) {
     return (
@@ -137,11 +142,22 @@ export function MessageItem({ message }: MessageItemProps) {
           isUser ? "items-end" : "items-start"
         )}
       >
-        {agentLabel && (
-          <Badge variant="secondary" className="text-[10px] font-normal">
-            {agentLabel}
-          </Badge>
-        )}
+        <div className="flex items-center gap-2">
+          {agentLabel && (
+            <Badge variant="secondary" className="text-[10px] font-normal">
+              {agentLabel}
+            </Badge>
+          )}
+          {!isUser && hasToolCalls && threadId && (
+            <button
+              onClick={() => setShowSession(true)}
+              className="text-xs text-muted-foreground hover:text-foreground"
+              title="查看执行日志"
+            >
+              📋
+            </button>
+          )}
+        </div>
         <div
           className={cn(
             "max-w-[80%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed",
@@ -152,12 +168,30 @@ export function MessageItem({ message }: MessageItemProps) {
         >
           {renderParts(message)}
         </div>
+        {threadId && (
+          <SessionModal
+            threadId={threadId}
+            open={showSession}
+            onOpenChange={setShowSession}
+          />
+        )}
       </div>
     );
   }
 
   return (
     <div className="flex w-full flex-col items-start gap-2">
+      <div className="flex items-center gap-2">
+        {hasToolCalls && threadId && (
+          <button
+            onClick={() => setShowSession(true)}
+            className="text-xs text-muted-foreground hover:text-foreground"
+            title="查看执行日志"
+          >
+            📋
+          </button>
+        )}
+      </div>
       {segments.map((segment, i) => (
         <div key={i} className="flex flex-col gap-1">
           <AgentLabel agent={segment.agent} />
@@ -166,6 +200,13 @@ export function MessageItem({ message }: MessageItemProps) {
           </div>
         </div>
       ))}
+      {threadId && (
+        <SessionModal
+          threadId={threadId}
+          open={showSession}
+          onOpenChange={setShowSession}
+        />
+      )}
     </div>
   );
 }
