@@ -1,0 +1,1 @@
+Actor agent: Actor tools: resolve_character,read_file

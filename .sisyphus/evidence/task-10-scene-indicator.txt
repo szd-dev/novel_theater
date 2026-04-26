@@ -1,0 +1,2 @@
+8:import { SceneIndicator } from "@/components/chat/scene-indicator";
+53:      <SceneIndicator threadId={threadId} />

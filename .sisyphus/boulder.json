@@ -1,0 +1,96 @@
+{
+  "active_plan": "/data/novel_theater/.sisyphus/plans/langgraph-refactor.md",
+  "started_at": "2026-04-25T17:16:23.700Z",
+  "session_ids": [
+    "ses_23a5b870cffebbkTmn07ewty6u",
+    "ses_23a1ccf80ffeh20yST8RhBl75e",
+    "ses_23a1ccf73ffeMd0HpD2pdy3x5C",
+    "ses_23a1ccdf9ffeesSx3F9Lfatj0F",
+    "ses_23a1ccc74ffeV4gpyAJYA1lZa2",
+    "ses_239fb3a2bffeN2c3a62Yr03MDi"
+  ],
+  "session_origins": {
+    "ses_23a5b870cffebbkTmn07ewty6u": "direct",
+    "ses_23a1ccf80ffeh20yST8RhBl75e": "appended",
+    "ses_23a1ccf73ffeMd0HpD2pdy3x5C": "appended",
+    "ses_23a1ccdf9ffeesSx3F9Lfatj0F": "appended",
+    "ses_23a1ccc74ffeV4gpyAJYA1lZa2": "appended",
+    "ses_239fb3a2bffeN2c3a62Yr03MDi": "appended"
+  },
+  "plan_name": "langgraph-refactor",
+  "agent": "atlas",
+  "task_sessions": {
+    "todo:1": {
+      "task_key": "todo:1",
+      "task_label": "1",
+      "task_title": "依赖替换 + 模型配置重写",
+      "session_id": "ses_23a3aa534ffepb028tfDuBHkbJ",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-04-25T17:55:08.801Z"
+    },
+    "todo:5": {
+      "task_key": "todo:5",
+      "task_label": "5",
+      "task_title": "Actor Agent 定义",
+      "session_id": "ses_23a2f40a5ffeI0FdhdhSen1JWT",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-04-25T18:06:21.255Z"
+    },
+    "todo:8": {
+      "task_key": "todo:8",
+      "task_label": "8",
+      "task_title": "GM Agent 定义 + asTool 注册",
+      "session_id": "ses_23a2bdc64ffeHsdRb2oftoV6T6",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-04-25T18:10:35.443Z"
+    },
+    "todo:9": {
+      "task_key": "todo:9",
+      "task_label": "9",
+      "task_title": "API 路由重写",
+      "session_id": "ses_23a27a783ffeP5z2WLyYBZsumc",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-04-25T18:14:48.072Z"
+    },
+    "todo:11": {
+      "task_key": "todo:11",
+      "task_label": "11",
+      "task_title": "删除 LangGraph 层",
+      "session_id": "ses_23a248c1affexZNImp5TKWJBSr",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-04-25T18:18:31.912Z"
+    },
+    "todo:12": {
+      "task_key": "todo:12",
+      "task_label": "12",
+      "task_title": "测试更新",
+      "session_id": "ses_23a20ba2effezENzBmEVrZBRpv",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-04-25T18:22:50.215Z"
+    },
+    "final-wave:f1": {
+      "task_key": "final-wave:f1",
+      "task_label": "F1",
+      "task_title": "**Plan Compliance Audit** — `oracle`",
+      "session_id": "ses_239fb3a2bffeN2c3a62Yr03MDi",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-04-25T19:01:34.988Z"
+    },
+    "final-wave:f3": {
+      "task_key": "final-wave:f3",
+      "task_label": "F3",
+      "task_title": "**Real Manual QA** — `unspecified-high` (+ `playwright` skill)",
+      "session_id": "ses_239fb3a2bffeN2c3a62Yr03MDi",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-04-25T19:04:27.759Z"
+    }
+  }
+}

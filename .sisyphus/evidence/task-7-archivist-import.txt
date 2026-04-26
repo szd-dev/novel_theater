@@ -1,0 +1,1 @@
+Archivist agent: Archivist tools: edit_file,glob_files,read_file,resolve_character,write_file

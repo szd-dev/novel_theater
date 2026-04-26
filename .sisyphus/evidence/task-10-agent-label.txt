@@ -1,0 +1,5 @@
+12:  // New: check tool-invocation parts (Agent-as-Tool pattern)
+14:    if (part.type === "tool-invocation") {
+19:      if (toolName === "call_actor") return "Actor";
+20:      if (toolName === "call_scribe") return "Scribe";
+21:      if (toolName === "call_archivist") return "Archivist";
