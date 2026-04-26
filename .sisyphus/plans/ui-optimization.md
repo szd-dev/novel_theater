@@ -185,7 +185,7 @@ Max Concurrent: 5 (Wave 1)
 
 ## TODOs
 
-- [ ] 1. Fix dynamic-tool part type check
+- [x] 1. Fix dynamic-tool part type check
 
   **What to do**:
   - In `src/components/chat/message-item.tsx`: Change `extractAgentLabel()` to check `part.type === "dynamic-tool"` instead of `part.type === "tool-invocation"`, and read `part.toolName` directly (not via `.toolInvocation?.toolName`)
@@ -258,7 +258,7 @@ Max Concurrent: 5 (Wave 1)
   - Files: `src/components/chat/message-item.tsx, src/components/chat/message-list.tsx`
   - Pre-commit: `npx tsc --noEmit`
 
-- [ ] 2. Add stop/abort functionality
+- [x] 2. Add stop/abort functionality
 
   **What to do**:
   - In `src/app/page.tsx`: Destructure `stop` from `useChat()` and pass as `onStop` prop to `ChatInput`
@@ -344,7 +344,7 @@ Max Concurrent: 5 (Wave 1)
   - Files: `src/app/page.tsx, src/components/chat/chat-input.tsx, src/app/api/narrative/route.ts`
   - Pre-commit: `npx tsc --noEmit`
 
-- [ ] 3. Replace input with auto-resize textarea
+- [x] 3. Replace input with auto-resize textarea
 
   **What to do**:
   - In `src/components/chat/chat-input.tsx`:
@@ -429,25 +429,664 @@ Max Concurrent: 5 (Wave 1)
   - Files: `src/components/chat/chat-input.tsx`
   - Pre-commit: `npx tsc --noEmit`
 
+- [x] 4. Project path configurability + initStoryTool for GM
+
+  **What to do**:
+  - Add `PROJECT_DIR` to `.env.example` (default: `.novel`) and `.env.local`
+  - Create `src/lib/project-path.ts` utility:
+    - `getProjectDir(): string` — reads `process.env.PROJECT_DIR` once, defaults to `.novel`
+    - `resolveProjectPath(baseDir?: string): string` — returns `join(baseDir || process.cwd(), getProjectDir())`
+  - Refactor `src/store/story-files.ts`:
+    - Change `dir` parameter semantics: `dir` now IS the project directory (not parent)
+    - Replace all `join(dir, ".novel", ...)` with `join(dir, ...)` (8 occurrences)
+    - Update `initStory`, `archiveStory`, `resetStory`, `readNovelFile`, `writeNovelFile`, `globNovelFiles`
+    - For `archiveStory`: archive dir should be `join(dirname(dir), '.archive')` (sibling of project dir)
+  - Update `src/app/api/narrative/route.ts`:
+    - Change `storyDir = process.cwd()` to `storyDir = resolveProjectPath()`
+    - Pass `storyDir` through context (already works)
+  - Update `src/app/api/narrative/status/route.ts`:
+    - Use `resolveProjectPath()` instead of `process.cwd()`
+  - Update `src/app/api/story/route.ts`:
+    - Use `resolveProjectPath()` instead of `process.cwd()`
+  - Update `src/context/build-story-context.ts`:
+    - Remove `join(dir, ".novel")` check at line 43-44 — `dir` IS the project dir now
+    - Change `existsSync(novelDir)` to `existsSync(dir)`
+  - Add `initStoryTool` to GM agent in `src/agents/registry.ts`:
+    - Import `initStoryTool` from `@/tools/story-tools`
+    - Add to `gmAgent.tools` array
+  - Update GM prompt `src/prompts/gm.ts` section "## 11. 错误处理":
+    - Reference `init_story` tool by name in the .novel/ initialization instructions
+
+  **Must NOT do**:
+  - Do not read `process.env.PROJECT_DIR` in downstream code (only in `project-path.ts`)
+  - Do not implement per-session project path configuration (future scope)
+  - Do not change `customOutputExtractor` logic
+  - Do not modify agent prompt core content beyond adding init_story reference
+
+  **Recommended Agent Profile**:
+  - **Category**: `unspecified-high`
+    - Reason: Multi-file refactoring touching store, routes, context, agents — needs careful coordination
+  - **Skills**: []
+
+  **Parallelization**:
+  - **Can Run In Parallel**: YES
+  - **Parallel Group**: Wave 1 (with Tasks 1, 2, 3, 5)
+  - **Blocks**: Task 8
+  - **Blocked By**: None
+
+  **References**:
+
+  **Pattern References**:
+  - `src/store/story-files.ts:29-65` — `initStory()` with `join(dir, ".novel")` pattern (8 occurrences to refactor)
+  - `src/app/api/narrative/route.ts:28` — `storyDir = process.cwd()` (change to resolveProjectPath())
+  - `src/agents/registry.ts:60` — `gmAgent.tools = [callActorTool, callScribeTool, callArchivistTool]` (add initStoryTool)
+  - `src/context/build-story-context.ts:43-44` — `join(dir, ".novel")` existence check (refactor)
+
+  **API/Type References**:
+  - `src/tools/story-tools.ts:10` — `initStoryTool` definition (dead code to activate)
+  - `src/prompts/gm.ts:334-339` — GM prompt section 11 referencing .novel/ initialization
+
+  **WHY Each Reference Matters**:
+  - `story-files.ts`: Core file with 8 hardcoded `.novel` references to refactor
+  - `route.ts:28`: Where `storyDir` is resolved — must use new utility
+  - `registry.ts:60`: Where GM tools are registered — add initStoryTool
+  - `build-story-context.ts:43-44`: Path check that must match new semantics
+
+  **Acceptance Criteria**:
+
+  **QA Scenarios (MANDATORY)**:
+
+  ```
+  Scenario: PROJECT_DIR defaults to .novel
+    Tool: Bash
+    Preconditions: No PROJECT_DIR in .env.local
+    Steps:
+      1. Start the app
+      2. curl POST /api/story with {"action":"init"}
+      3. Check if .novel/ directory was created with template files
+    Expected Result: .novel/ directory exists with world.md, style.md, timeline.md, plot.md, debts.md, chapters.md, characters/, scenes/
+    Failure Indicators: .novel/ not created, or created at wrong path
+    Evidence: .sisyphus/evidence/task-4-default-path.txt
+
+  Scenario: PROJECT_DIR overrides default
+    Tool: Bash
+    Preconditions: Set PROJECT_DIR=.test-novel in .env.local
+    Steps:
+      1. Restart the app
+      2. curl POST /api/story with {"action":"init"}
+      3. Check if .test-novel/ directory was created
+    Expected Result: .test-novel/ directory exists with template files
+    Failure Indicators: .novel/ created instead of .test-novel/, or neither created
+    Evidence: .sisyphus/evidence/task-4-custom-path.txt
+
+  Scenario: GM can call init_story tool when .novel/ missing
+    Tool: Playwright
+    Preconditions: .novel/ does not exist, app running
+    Steps:
+      1. Navigate to http://localhost:4477
+      2. Send message "开始新故事"
+      3. Wait for GM response
+      4. Check if .novel/ was created
+    Expected Result: GM calls init_story tool, .novel/ directory created with templates
+    Failure Indicators: GM cannot initialize, .novel/ not created, error in tool call
+    Evidence: .sisyphus/evidence/task-4-gm-init.png
+  ```
+
+  **Commit**: YES
+  - Message: `feat(config): project path configurability + initStoryTool`
+  - Files: `src/lib/project-path.ts, src/store/story-files.ts, src/app/api/narrative/route.ts, src/app/api/narrative/status/route.ts, src/app/api/story/route.ts, src/context/build-story-context.ts, src/agents/registry.ts, src/prompts/gm.ts, .env.example`
+  - Pre-commit: `npx tsc --noEmit`
+
+- [x] 5. Create custom FileSession class
+
+  **What to do**:
+  - Create `src/session/file-session.ts`:
+    - Implement the `Session` interface from `@openai/agents` (study the interface in `node_modules/@openai/agents-core`)
+    - Storage: JSON files in a configurable directory (e.g., `.sessions/{threadId}/`)
+    - Methods: `get()`, `set()`, `delete()`, `list()` or equivalent per the Session interface
+    - Each session stored as a JSON file containing the full conversation history
+    - Auto-create directory on first write
+    - Handle concurrent access with file locking or atomic writes
+  - Create `src/session/file-session.test.ts` (basic smoke test if desired, or skip per test strategy)
+  - Update `src/session/manager.ts`:
+    - Replace `MemorySession` with `FileSession` for `gmSession`
+    - Replace `MemorySession` with `FileSession` for `characterSessions`
+    - Pass session storage directory (from project path)
+
+  **Must NOT do**:
+  - Do not use SQLiteSession (doesn't exist in SDK)
+  - Do not use OpenAIConversationsSession (requires OpenAI API key, may not work with Anthropic)
+  - Do not change the Session interface contract
+
+  **Recommended Agent Profile**:
+  - **Category**: `deep`
+    - Reason: Need to study @openai/agents Session interface, implement all methods, handle file I/O edge cases
+  - **Skills**: []
+
+  **Parallelization**:
+  - **Can Run In Parallel**: YES
+  - **Parallel Group**: Wave 1 (with Tasks 1, 2, 3, 4)
+  - **Blocks**: Tasks 7, 10
+  - **Blocked By**: None
+
+  **References**:
+
+  **Pattern References**:
+  - `src/session/manager.ts` — Current MemorySession usage to replace
+  - `src/session/types.ts` — StorySession type definition
+
+  **API/Type References**:
+  - `node_modules/@openai/agents-core/dist/session.d.ts` — Session interface definition (study all methods)
+  - `node_modules/@openai/agents-core/dist/session/memory.d.ts` — MemorySession implementation (reference for interface compliance)
+
+  **WHY Each Reference Matters**:
+  - `manager.ts`: Where to swap MemorySession → FileSession
+  - `session.d.ts`: The exact interface to implement — must match all method signatures
+  - `memory.d.ts`: Reference implementation to understand expected behavior
+
+  **Acceptance Criteria**:
+
+  **QA Scenarios (MANDATORY)**:
+
+  ```
+  Scenario: FileSession persists data across restarts
+    Tool: Bash
+    Preconditions: App not running
+    Steps:
+      1. Start app, send a message to create a session
+      2. Stop app (kill process)
+      3. Start app again
+      4. Check if session data still exists in .sessions/ directory
+      5. Verify session can be loaded (curl GET /api/narrative/status)
+    Expected Result: Session JSON files exist in .sessions/, data survives restart
+    Failure Indicators: .sessions/ empty after restart, or session data lost
+    Evidence: .sisyphus/evidence/task-5-persistence.txt
+
+  Scenario: FileSession handles concurrent writes safely
+    Tool: Bash
+    Preconditions: App running
+    Steps:
+      1. Send two messages rapidly in succession (within 1 second)
+      2. Check session files for corruption (valid JSON)
+    Expected Result: Both messages recorded, session files valid JSON
+    Failure Indicators: Corrupted JSON, missing messages, or write errors
+    Evidence: .sisyphus/evidence/task-5-concurrent.txt
+  ```
+
+  **Commit**: YES
+  - Message: `feat(session): custom FileSession persistence backend`
+  - Files: `src/session/file-session.ts, src/session/manager.ts`
+  - Pre-commit: `npx tsc --noEmit`
+
+- [x] 6. Render dynamic-tool parts with agent badges
+
+  **What to do**:
+  - In `src/components/chat/message-item.tsx`:
+    - Add rendering for `part.type === "dynamic-tool"` in `renderParts()`
+    - When `part.state === "input-streaming"` or `"input-available"`: show loading spinner + agent badge
+    - When `part.state === "output-available"`: show agent badge + output text
+    - When `part.state === "output-error"`: show error state
+    - Map `part.toolName` to agent label: `call_actor` → "Actor", `call_scribe` → "Scribe", `call_archivist` → "Archivist"
+    - Use `AgentLabel` component and `AGENT_COLORS` from `agent-label.tsx` for consistent styling
+    - Handle `step-start` parts (return null or thin separator)
+  - Create a `ToolCallPart` sub-component for rendering individual tool call parts
+
+  **Must NOT do**:
+  - Do not display full tool parameters (just agent name + state indicator)
+  - Do not create separate UIMessage objects
+  - Do not modify the progress indicator logic (that was fixed in Task 1)
+
+  **Recommended Agent Profile**:
+  - **Category**: `visual-engineering`
+    - Reason: UI component creation with specific visual design (agent badges, loading states)
+  - **Skills**: []
+
+  **Parallelization**:
+  - **Can Run In Parallel**: YES
+  - **Parallel Group**: Wave 2 (with Tasks 7, 8)
+  - **Blocks**: Task 9
+  - **Blocked By**: Task 1
+
+  **References**:
+
+  **Pattern References**:
+  - `src/components/chat/message-item.tsx:34-52` — `renderParts()` function to extend
+  - `src/components/chat/agent-label.tsx` — `AgentLabel` component and `AGENT_COLORS` to reuse
+  - `src/components/chat/progress-indicator.tsx` — Existing progress UI patterns
+
+  **API/Type References**:
+  - `node_modules/ai/dist/index.d.ts` — `DynamicToolUIPart` with `toolName`, `state`, `input`, `output` fields
+
+  **WHY Each Reference Matters**:
+  - `message-item.tsx:34-52`: Where to add dynamic-tool rendering
+  - `agent-label.tsx`: Existing styled component to reuse for consistent agent badges
+  - `DynamicToolUIPart`: The exact type structure for tool call parts
+
+  **Acceptance Criteria**:
+
+  **QA Scenarios (MANDATORY)**:
+
+  ```
+  Scenario: Tool calls show agent badges instead of blank lines
+    Tool: Playwright
+    Preconditions: App running, .novel/ initialized
+    Steps:
+      1. Send a message that triggers call_actor (e.g., "塞莉娅做了一个决定")
+      2. Wait for response to complete
+      3. Check for "Actor" badge/label in the message
+      4. Verify NO blank lines in the message area
+    Expected Result: Agent badge visible with correct name and color, no blank lines
+    Failure Indicators: Blank lines still present, or no agent badge visible
+    Evidence: .sisyphus/evidence/task-6-agent-badge.png
+
+  Scenario: Tool call shows loading state during streaming
+    Tool: Playwright
+    Preconditions: App running
+    Steps:
+      1. Send a message that triggers multi-step agent response
+      2. While streaming, observe the tool call part
+    Expected Result: Loading indicator visible for in-progress tool calls
+    Failure Indicators: No loading state, or tool call appears only after completion
+    Evidence: .sisyphus/evidence/task-6-loading-state.png
+  ```
+
+  **Commit**: YES
+  - Message: `feat(chat): render dynamic-tool parts with agent badges`
+  - Files: `src/components/chat/message-item.tsx`
+  - Pre-commit: `npx tsc --noEmit`
+
+- [x] 7. Wire characterSessions + execution log capture
+
+  **What to do**:
+  - **First**: Verify if `asTool()` supports a `session` option by reading its type definition in `node_modules/@openai/agents-core/dist/agent.d.ts` or similar
+  - **If asTool() supports session**: Wire `characterSessions` to each sub-agent's `asTool()` call in `registry.ts`
+  - **If asTool() does NOT support session**: Implement alternative approach — wrap `asTool()` calls with custom tool functions that internally call `Runner.run(agent, input, { session })` and capture the full `AgentRunResult`
+  - Create `src/session/execution-log.ts`:
+    - Define `ExecutionLog` type: `{ agentName, toolCallId, input, output, toolCalls[], timestamp, duration, tokenUsage? }`
+    - Create `ExecutionLogStore` — in-memory Map keyed by threadId, stores array of ExecutionLog entries
+    - Capture execution data from each sub-agent run (either via asTool hooks or custom wrapper)
+  - Update `src/session/manager.ts`:
+    - Add `executionLogs: Map<string, ExecutionLog[]>` to StorySession
+    - Add `addExecutionLog(threadId, log)` and `getExecutionLogs(threadId)` methods
+  - Consider: Re-enable tracing selectively (`setTracingDisabled(false)`) or keep disabled and rely on execution log capture
+
+  **Must NOT do**:
+  - Do not modify `customOutputExtractor` (it doesn't discard trace data)
+  - Do not build the session viewer UI yet (Task 11)
+  - Do not create API endpoints yet (Task 10)
+
+  **Recommended Agent Profile**:
+  - **Category**: `deep`
+    - Reason: Need to investigate asTool() API, design execution log capture, wire sessions — complex
+  - **Skills**: []
+
+  **Parallelization**:
+  - **Can Run In Parallel**: YES
+  - **Parallel Group**: Wave 2 (with Tasks 6, 8)
+  - **Blocks**: Task 10
+  - **Blocked By**: Task 5
+
+  **References**:
+
+  **Pattern References**:
+  - `src/agents/registry.ts` — asTool() registration with customOutputExtractor
+  - `src/session/manager.ts` — StorySession with characterSessions (dead code to activate)
+  - `src/session/types.ts` — StorySession type
+
+  **API/Type References**:
+  - `node_modules/@openai/agents-core/dist/agent.d.ts` — asTool() type signature (CHECK for session option)
+  - `node_modules/@openai/agents-core/dist/run.d.ts` — Runner.run() options (has session parameter)
+  - `node_modules/@openai/agents-core/dist/result.d.ts` — AgentRunResult type (what data is available)
+
+  **WHY Each Reference Matters**:
+  - `registry.ts`: Where asTool() calls are made — may need to add session option or replace with custom wrapper
+  - `agent.d.ts`: MUST CHECK — determines whether asTool() supports session or needs workaround
+  - `result.d.ts`: What execution data can be captured from agent runs
+
+  **Acceptance Criteria**:
+
+  **QA Scenarios (MANDATORY)**:
+
+  ```
+  Scenario: Execution logs captured for sub-agent runs
+    Tool: Bash (curl)
+    Preconditions: App running, .novel/ initialized
+    Steps:
+      1. Send a message that triggers call_actor
+      2. After response completes, check execution log store (via future API or debug endpoint)
+    Expected Result: Execution log entry exists with agentName="Actor", input/output recorded, timestamp present
+    Failure Indicators: No execution log entries, or missing input/output data
+    Evidence: .sisyphus/evidence/task-7-exec-log.txt
+
+  Scenario: Character sessions persist across calls
+    Tool: Bash (curl)
+    Preconditions: App running
+    Steps:
+      1. Send "塞莉娅说话" (triggers call_actor for 塞莉娅)
+      2. Send "塞莉娅继续" (triggers call_actor for 塞莉娅 again)
+      3. Check if second call has context from first call
+    Expected Result: Actor(塞莉娅) second call references previous dialogue history
+    Failure Indicators: Actor starts fresh each time with no memory of previous call
+    Evidence: .sisyphus/evidence/task-7-session-reuse.txt
+  ```
+
+  **Commit**: YES
+  - Message: `feat(session): wire characterSessions + execution log capture`
+  - Files: `src/agents/registry.ts, src/session/manager.ts, src/session/execution-log.ts, src/session/types.ts`
+  - Pre-commit: `npx tsc --noEmit`
+
+- [x] 8. Clean up .novel_backup + update .gitignore
+
+  **What to do**:
+  - Remove `.novel_backup/` directory (contains only template duplicates, no code references it)
+  - Update `.gitignore`: Add `.sessions/` directory (FileSession data), add `.archive/` directory
+  - Verify `.novel/` is still in `.gitignore` (it is, line 44)
+
+  **Must NOT do**:
+  - Do not remove `.novel/` from `.gitignore`
+  - Do not delete any actual story data
+
+  **Recommended Agent Profile**:
+  - **Category**: `quick`
+    - Reason: Simple file deletion and gitignore update
+  - **Skills**: []
+
+  **Parallelization**:
+  - **Can Run In Parallel**: YES
+  - **Parallel Group**: Wave 2 (with Tasks 6, 7)
+  - **Blocks**: None
+  - **Blocked By**: Task 4
+
+  **References**:
+
+  **Pattern References**:
+  - `.gitignore:44` — Current `.novel/` entry
+  - `.novel_backup/` — Directory to remove
+
+  **Acceptance Criteria**:
+
+  **QA Scenarios (MANDATORY)**:
+
+  ```
+  Scenario: .novel_backup removed, gitignore updated
+    Tool: Bash
+    Preconditions: None
+    Steps:
+      1. Check that .novel_backup/ does not exist
+      2. Check .gitignore contains .sessions/ and .archive/
+    Expected Result: .novel_backup/ gone, .gitignore has new entries
+    Failure Indicators: .novel_backup/ still exists, or .gitignore missing entries
+    Evidence: .sisyphus/evidence/task-8-cleanup.txt
+  ```
+
+  **Commit**: YES
+  - Message: `chore: clean up .novel_backup and update .gitignore`
+  - Files: `.gitignore`
+  - Pre-commit: none
+
+- [x] 9. Multi-bubble step splitting
+
+  **What to do**:
+  - Create `src/components/chat/message-segments.tsx`:
+    - Implement `splitBySteps(message: UIMessage): Segment[]` function
+    - Segment type: `{ agent: string, parts: UIMessagePart[], toolCallId?: string }`
+    - Algorithm: Split parts array at `step-start` boundaries; each segment's agent determined by the preceding `dynamic-tool` part's `toolName`
+    - Map toolName to agent: `call_actor` → "Actor", `call_scribe` → "Scribe", `call_archivist` → "Archivist", default → "GM"
+  - Refactor `src/components/chat/message-item.tsx`:
+    - For assistant messages with multiple segments, render each segment as an independent bubble div
+    - Each bubble: same styling (rounded, padding) + `AgentLabel` badge at top-left + segment's text content
+    - Bubbles spaced with `space-y-2` or similar
+    - For single-segment messages (no step-start), render as before (no visual change)
+  - Update `src/components/chat/message-list.tsx`:
+    - Import and use segment splitting for assistant messages
+  - Handle streaming: New `step-start` arriving during streaming should create a new bubble immediately (natural with reactive rendering)
+
+  **Must NOT do**:
+  - Do not create separate UIMessage objects (splitting is render-only)
+  - Do not add step approval, retry, or editing functionality
+  - Do not change the message data structure
+
+  **Recommended Agent Profile**:
+  - **Category**: `visual-engineering`
+    - Reason: UI component refactoring with specific visual design (independent bubbles, agent labels)
+  - **Skills**: []
+
+  **Parallelization**:
+  - **Can Run In Parallel**: YES
+  - **Parallel Group**: Wave 3 (with Task 10)
+  - **Blocks**: Task 11
+  - **Blocked By**: Tasks 1, 6
+
+  **References**:
+
+  **Pattern References**:
+  - `src/components/chat/message-item.tsx` — Current single-bubble rendering to refactor
+  - `src/components/chat/message-list.tsx` — Message list to update
+  - `src/components/chat/agent-label.tsx` — AgentLabel component to use per-segment
+
+  **API/Type References**:
+  - `node_modules/ai/dist/index.d.ts` — `StepStartUIPart` with `type: 'step-start'`, `DynamicToolUIPart`
+
+  **WHY Each Reference Matters**:
+  - `message-item.tsx`: Core file to refactor — from single bubble to multi-bubble
+  - `StepStartUIPart`: The boundary marker that enables splitting
+  - `agent-label.tsx`: Reuse for per-segment agent badges
+
+  **Acceptance Criteria**:
+
+  **QA Scenarios (MANDATORY)**:
+
+  ```
+  Scenario: Multi-step response renders as separate bubbles
+    Tool: Playwright
+    Preconditions: App running, .novel/ initialized
+    Steps:
+      1. Send a message that triggers full pipeline (GM → Actor → Scribe → Archivist)
+      2. Wait for complete response
+      3. Count distinct bubble/segment elements in the assistant message area
+    Expected Result: Multiple distinct bubbles visible, each with an agent label (GM, Actor, Scribe, Archivist)
+    Failure Indicators: All content in one monolithic bubble, or missing agent labels
+    Evidence: .sisyphus/evidence/task-9-multi-bubble.png
+
+  Scenario: Single-step response renders as single bubble (no regression)
+    Tool: Playwright
+    Preconditions: App running
+    Steps:
+      1. Send "你好" (simple greeting, no tool calls)
+      2. Observe the response
+    Expected Result: Single bubble with GM response, no splitting artifacts
+    Failure Indicators: Unnecessary splitting, empty bubbles, or visual glitches
+    Evidence: .sisyphus/evidence/task-9-single-bubble.png
+
+  Scenario: New bubble appears during streaming when step starts
+    Tool: Playwright
+    Preconditions: App running
+    Steps:
+      1. Send a message that triggers multi-step response
+      2. While streaming, observe new bubbles appearing
+    Expected Result: New bubble appears when a new step starts during streaming
+    Failure Indicators: All content appears in one bubble until streaming completes
+    Evidence: .sisyphus/evidence/task-9-streaming-split.png
+  ```
+
+  **Commit**: YES
+  - Message: `feat(chat): multi-bubble step splitting`
+  - Files: `src/components/chat/message-segments.tsx, src/components/chat/message-item.tsx, src/components/chat/message-list.tsx`
+  - Pre-commit: `npx tsc --noEmit`
+
+- [x] 10. Session execution log API endpoints
+
+  **What to do**:
+  - Create `src/app/api/sessions/route.ts`:
+    - `GET /api/sessions?threadId=xxx` — list execution logs for a thread
+    - Returns array of `ExecutionLog` entries with agentName, toolCallId, input summary, output preview, timestamp, duration
+  - Create `src/app/api/sessions/[logId]/route.ts`:
+    - `GET /api/sessions/[logId]?threadId=xxx` — get full execution log detail
+    - Returns complete ExecutionLog with full input, full output, all tool calls, token usage
+  - Add input validation (threadId required, logId format check)
+
+  **Must NOT do**:
+  - Do not build the Modal UI yet (Task 11)
+  - Do not add write/delete endpoints (read-only for now)
+
+  **Recommended Agent Profile**:
+  - **Category**: `unspecified-high`
+    - Reason: API route creation with data model, validation, and integration with execution log store
+  - **Skills**: []
+
+  **Parallelization**:
+  - **Can Run In Parallel**: YES
+  - **Parallel Group**: Wave 3 (with Task 9)
+  - **Blocks**: Task 11
+  - **Blocked By**: Tasks 5, 7
+
+  **References**:
+
+  **Pattern References**:
+  - `src/app/api/narrative/status/route.ts` — Existing API route pattern to follow
+  - `src/session/execution-log.ts` — ExecutionLog type and store (created in Task 7)
+
+  **WHY Each Reference Matters**:
+  - `status/route.ts`: Pattern for Next.js API route with error handling
+  - `execution-log.ts`: Data source for the API endpoints
+
+  **Acceptance Criteria**:
+
+  **QA Scenarios (MANDATORY)**:
+
+  ```
+  Scenario: GET /api/sessions returns execution logs
+    Tool: Bash (curl)
+    Preconditions: App running, at least one multi-step conversation completed
+    Steps:
+      1. curl GET /api/sessions?threadId=<existingThreadId>
+    Expected Result: JSON array with execution log entries, each having agentName, timestamp, etc.
+    Failure Indicators: Empty array, 404, or 500 error
+    Evidence: .sisyphus/evidence/task-10-list-logs.txt
+
+  Scenario: GET /api/sessions/[logId] returns full log detail
+    Tool: Bash (curl)
+    Preconditions: Execution logs exist
+    Steps:
+      1. curl GET /api/sessions/<logId>?threadId=<threadId>
+    Expected Result: Full ExecutionLog with complete input, output, tool calls
+    Failure Indicators: 404, or truncated output
+    Evidence: .sisyphus/evidence/task-10-log-detail.txt
+  ```
+
+  **Commit**: YES
+  - Message: `feat(api): session execution log endpoints`
+  - Files: `src/app/api/sessions/route.ts, src/app/api/sessions/[logId]/route.ts`
+  - Pre-commit: `npx tsc --noEmit`
+
+- [x] 11. Subagent session Modal UI
+
+  **What to do**:
+  - Create `src/components/chat/session-modal.tsx`:
+    - Modal/Dialog component triggered by a button on each message bubble
+    - Fetch execution logs from `/api/sessions?threadId=xxx` on open
+    - Display list of sub-agent executions in the Modal
+    - Each entry shows: agent name (with color badge), timestamp, duration, input summary
+    - Click an entry to expand and see full output + tool calls
+    - Use shadcn/ui Dialog component for the Modal
+  - Add trigger button to `message-item.tsx`:
+    - Small icon button (e.g., info/eye icon) on assistant messages that have tool calls
+    - Only visible when `dynamic-tool` parts exist in the message
+    - Opens the SessionModal on click
+  - Pass `threadId` from page context down to MessageList → MessageItem
+
+  **Must NOT do**:
+  - Do not add write/delete functionality to the Modal
+  - Do not implement real-time log streaming (fetch on open is sufficient)
+
+  **Recommended Agent Profile**:
+  - **Category**: `visual-engineering`
+    - Reason: UI component creation with Modal, data fetching, expandable sections
+  - **Skills**: []
+
+  **Parallelization**:
+  - **Can Run In Parallel**: NO
+  - **Parallel Group**: Wave 4 (sequential)
+  - **Blocks**: None
+  - **Blocked By**: Task 10
+
+  **References**:
+
+  **Pattern References**:
+  - `src/components/chat/agent-label.tsx` — AgentLabel component to reuse in Modal
+  - `src/components/ui/` — shadcn/ui Dialog component for Modal
+
+  **API/Type References**:
+  - `src/app/api/sessions/route.ts` — API endpoint to fetch execution logs (created in Task 10)
+  - `src/session/execution-log.ts` — ExecutionLog type
+
+  **WHY Each Reference Matters**:
+  - `agent-label.tsx`: Consistent agent styling in the Modal
+  - `sessions/route.ts`: Data source for the Modal content
+  - `ui/ Dialog`: shadcn/ui component for Modal implementation
+
+  **Acceptance Criteria**:
+
+  **QA Scenarios (MANDATORY)**:
+
+  ```
+  Scenario: Session Modal opens and shows execution logs
+    Tool: Playwright
+    Preconditions: App running, multi-step conversation completed
+    Steps:
+      1. Find a message with tool calls (has info/eye button)
+      2. Click the session detail button
+      3. Wait for Modal to open and data to load
+      4. Verify execution log entries are visible
+    Expected Result: Modal opens with list of sub-agent executions (Actor, Scribe, Archivist)
+    Failure Indicators: Modal doesn't open, no data, or error message
+    Evidence: .sisyphus/evidence/task-11-modal-open.png
+
+  Scenario: Expand execution log to see full details
+    Tool: Playwright
+    Preconditions: Modal open with execution logs
+    Steps:
+      1. Click on an Actor execution log entry
+      2. Verify expanded view shows full output text
+    Expected Result: Full Actor output visible in expanded section
+    Failure Indicators: Output truncated, or expand doesn't work
+    Evidence: .sisyphus/evidence/task-11-expand-detail.png
+
+  Scenario: Modal shows empty state when no execution logs
+    Tool: Playwright
+    Preconditions: App running, simple conversation (no tool calls)
+    Steps:
+      1. Find a message without tool calls
+      2. Verify no session detail button visible
+    Expected Result: No session detail button on messages without tool calls
+    Failure Indicators: Button visible but Modal empty, or button on wrong messages
+    Evidence: .sisyphus/evidence/task-11-no-logs.png
+  ```
+
+  **Commit**: YES
+  - Message: `feat(chat): subagent session Modal viewer`
+  - Files: `src/components/chat/session-modal.tsx, src/components/chat/message-item.tsx`
+  - Pre-commit: `npx tsc --noEmit`
+
 ---
 
 ## Final Verification Wave (MANDATORY — after ALL implementation tasks)
 
 > 4 review agents run in PARALLEL. ALL must APPROVE. Present consolidated results to user and get explicit "okay" before completing.
 
-- [ ] F1. **Plan Compliance Audit** — `oracle`
+- [x] F1. **Plan Compliance Audit** — `oracle`
   Read the plan end-to-end. For each "Must Have": verify implementation exists (read file, curl endpoint, run command). For each "Must NOT Have": search codebase for forbidden patterns — reject with file:line if found. Check evidence files exist in .sisyphus/evidence/. Compare deliverables against plan.
   Output: `Must Have [N/N] | Must NOT Have [N/N] | Tasks [N/N] | VERDICT: APPROVE/REJECT`
 
-- [ ] F2. **Code Quality Review** — `unspecified-high`
+- [x] F2. **Code Quality Review** — `unspecified-high`
   Run `tsc --noEmit` + linter. Review all changed files for: `as any`/`@ts-ignore`, empty catches, console.log in prod, commented-out code, unused imports. Check AI slop: excessive comments, over-abstraction, generic names.
   Output: `Build [PASS/FAIL] | Lint [PASS/FAIL] | Files [N clean/N issues] | VERDICT`
 
-- [ ] F3. **Real Manual QA** — `unspecified-high` (+ `playwright` skill)
+- [x] F3. **Real Manual QA** — `unspecified-high` (+ `playwright` skill)
   Start from clean state. Execute EVERY QA scenario from EVERY task — follow exact steps, capture evidence. Test cross-task integration. Test edge cases: empty state, abort during streaming, missing .novel/. Save to `.sisyphus/evidence/final-qa/`.
   Output: `Scenarios [N/N pass] | Integration [N/N] | Edge Cases [N tested] | VERDICT`
 
-- [ ] F4. **Scope Fidelity Check** — `deep`
+- [x] F4. **Scope Fidelity Check** — `deep`
   For each task: read "What to do", read actual diff. Verify 1:1 — everything in spec was built, nothing beyond spec was built. Check "Must NOT do" compliance. Detect cross-task contamination.
   Output: `Tasks [N/N compliant] | Contamination [CLEAN/N issues] | Unaccounted [CLEAN/N files] | VERDICT`
 

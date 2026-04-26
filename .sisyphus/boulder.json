@@ -1,96 +1,67 @@
 {
-  "active_plan": "/data/novel_theater/.sisyphus/plans/langgraph-refactor.md",
-  "started_at": "2026-04-25T17:16:23.700Z",
+  "active_plan": "/data/novel_theater/.sisyphus/plans/ui-optimization.md",
+  "started_at": "2026-04-26T15:33:57.136Z",
   "session_ids": [
-    "ses_23a5b870cffebbkTmn07ewty6u",
-    "ses_23a1ccf80ffeh20yST8RhBl75e",
-    "ses_23a1ccf73ffeMd0HpD2pdy3x5C",
-    "ses_23a1ccdf9ffeesSx3F9Lfatj0F",
-    "ses_23a1ccc74ffeV4gpyAJYA1lZa2",
-    "ses_239fb3a2bffeN2c3a62Yr03MDi"
+    "ses_23592f512ffeJWJgC6aKLWDeQL",
+    "ses_2357161fcffePuR3HSMEGEP755",
+    "ses_235712d76ffeiluM2B8mYWKJ7n",
+    "ses_23570f030ffekUvQsEs5UJkJ7P",
+    "ses_23570b681ffeWPd5h4A2vDwufI"
   ],
   "session_origins": {
-    "ses_23a5b870cffebbkTmn07ewty6u": "direct",
-    "ses_23a1ccf80ffeh20yST8RhBl75e": "appended",
-    "ses_23a1ccf73ffeMd0HpD2pdy3x5C": "appended",
-    "ses_23a1ccdf9ffeesSx3F9Lfatj0F": "appended",
-    "ses_23a1ccc74ffeV4gpyAJYA1lZa2": "appended",
-    "ses_239fb3a2bffeN2c3a62Yr03MDi": "appended"
+    "ses_23592f512ffeJWJgC6aKLWDeQL": "direct",
+    "ses_2357161fcffePuR3HSMEGEP755": "appended",
+    "ses_235712d76ffeiluM2B8mYWKJ7n": "appended",
+    "ses_23570f030ffekUvQsEs5UJkJ7P": "appended",
+    "ses_23570b681ffeWPd5h4A2vDwufI": "appended"
   },
-  "plan_name": "langgraph-refactor",
+  "plan_name": "ui-optimization",
   "agent": "atlas",
   "task_sessions": {
     "todo:1": {
       "task_key": "todo:1",
       "task_label": "1",
-      "task_title": "依赖替换 + 模型配置重写",
-      "session_id": "ses_23a3aa534ffepb028tfDuBHkbJ",
+      "task_title": "Fix dynamic-tool part type check",
+      "session_id": "ses_2358de377ffen0McstCLs6kbIt",
       "agent": "Sisyphus-Junior",
       "category": "unspecified-high",
-      "updated_at": "2026-04-25T17:55:08.801Z"
+      "updated_at": "2026-04-26T15:44:39.207Z"
     },
-    "todo:5": {
-      "task_key": "todo:5",
-      "task_label": "5",
-      "task_title": "Actor Agent 定义",
-      "session_id": "ses_23a2f40a5ffeI0FdhdhSen1JWT",
+    "todo:6": {
+      "task_key": "todo:6",
+      "task_label": "6",
+      "task_title": "Render dynamic-tool parts with agent badges",
+      "session_id": "ses_23583f282ffeBWJk43qVpxDwiD",
       "agent": "Sisyphus-Junior",
-      "category": "unspecified-high",
-      "updated_at": "2026-04-25T18:06:21.255Z"
-    },
-    "todo:8": {
-      "task_key": "todo:8",
-      "task_label": "8",
-      "task_title": "GM Agent 定义 + asTool 注册",
-      "session_id": "ses_23a2bdc64ffeHsdRb2oftoV6T6",
-      "agent": "Sisyphus-Junior",
-      "category": "deep",
-      "updated_at": "2026-04-25T18:10:35.443Z"
+      "category": "visual-engineering",
+      "updated_at": "2026-04-26T15:52:15.749Z"
     },
     "todo:9": {
       "task_key": "todo:9",
       "task_label": "9",
-      "task_title": "API 路由重写",
-      "session_id": "ses_23a27a783ffeP5z2WLyYBZsumc",
+      "task_title": "Multi-bubble step splitting",
+      "session_id": "ses_2357a33d1ffetGuGQJ02uVqfLx",
       "agent": "Sisyphus-Junior",
-      "category": "unspecified-high",
-      "updated_at": "2026-04-25T18:14:48.072Z"
+      "category": "visual-engineering",
+      "updated_at": "2026-04-26T16:03:14.403Z"
     },
     "todo:11": {
       "task_key": "todo:11",
       "task_label": "11",
-      "task_title": "删除 LangGraph 层",
-      "session_id": "ses_23a248c1affexZNImp5TKWJBSr",
+      "task_title": "Subagent session Modal UI",
+      "session_id": "ses_23575b3ecffeoZL3k4wG2Kr8wY",
       "agent": "Sisyphus-Junior",
-      "category": "quick",
-      "updated_at": "2026-04-25T18:18:31.912Z"
-    },
-    "todo:12": {
-      "task_key": "todo:12",
-      "task_label": "12",
-      "task_title": "测试更新",
-      "session_id": "ses_23a20ba2effezENzBmEVrZBRpv",
-      "agent": "Sisyphus-Junior",
-      "category": "unspecified-high",
-      "updated_at": "2026-04-25T18:22:50.215Z"
+      "category": "visual-engineering",
+      "updated_at": "2026-04-26T16:08:54.575Z"
     },
     "final-wave:f1": {
       "task_key": "final-wave:f1",
       "task_label": "F1",
       "task_title": "**Plan Compliance Audit** — `oracle`",
-      "session_id": "ses_239fb3a2bffeN2c3a62Yr03MDi",
+      "session_id": "ses_23570b681ffeWPd5h4A2vDwufI",
       "agent": "Sisyphus-Junior",
-      "category": "unspecified-high",
-      "updated_at": "2026-04-25T19:01:34.988Z"
-    },
-    "final-wave:f3": {
-      "task_key": "final-wave:f3",
-      "task_label": "F3",
-      "task_title": "**Real Manual QA** — `unspecified-high` (+ `playwright` skill)",
-      "session_id": "ses_239fb3a2bffeN2c3a62Yr03MDi",
-      "agent": "Sisyphus-Junior",
-      "category": "unspecified-high",
-      "updated_at": "2026-04-25T19:04:27.759Z"
+      "category": "deep",
+      "updated_at": "2026-04-26T16:18:50.506Z"
     }
   }
 }
