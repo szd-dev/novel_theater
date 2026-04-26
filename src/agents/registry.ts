@@ -3,6 +3,7 @@ import { gmAgent } from './gm';
 import { actorAgent } from './actor';
 import { scribeAgent } from './scribe';
 import { archivistAgent } from './archivist';
+import { initStoryTool } from '@/tools/story-tools';
 
 // Register actor as a tool for GM
 const callActorTool = actorAgent.asTool({
@@ -57,7 +58,7 @@ const callArchivistTool = archivistAgent.asTool({
 });
 
 // Set GM's tools
-gmAgent.tools = [callActorTool, callScribeTool, callArchivistTool];
+gmAgent.tools = [callActorTool, callScribeTool, callArchivistTool, initStoryTool];
 
 // Re-export for convenience
 export { gmAgent, actorAgent, scribeAgent, archivistAgent };

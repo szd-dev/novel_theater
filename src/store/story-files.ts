@@ -1,4 +1,4 @@
-import { join } from "node:path";
+import { join, dirname } from "node:path";
 import {
   mkdirSync,
   existsSync,
@@ -27,7 +27,7 @@ async function pathExists(p: string): Promise<boolean> {
  * Idempotent — skips if directory already exists.
  */
 export async function initStory(dir: string): Promise<string> {
-  const novelDir = join(dir, ".novel");
+  const novelDir = dir;
 
   if (existsSync(novelDir)) {
     return "Story already initialized. Use resetStory() to start over.";
@@ -72,7 +72,7 @@ export async function archiveStory(
   dir: string,
   name: string,
 ): Promise<string> {
-  const novelDir = join(dir, ".novel");
+  const novelDir = dir;
 
   if (!existsSync(novelDir)) {
     return "故事尚未初始化，无法归档。";
@@ -89,7 +89,7 @@ export async function archiveStory(
     return "归档名不能超过200个字符。";
   }
 
-  const archiveDir = join(dir, ".archive");
+  const archiveDir = join(dirname(dir), ".archive");
   mkdirSync(archiveDir, { recursive: true });
 
   const archivePath = join(archiveDir, trimmed);
@@ -123,13 +123,13 @@ export async function archiveStory(
  * Aborts if backup fails.
  */
 export async function resetStory(dir: string): Promise<string> {
-  const novelDir = join(dir, ".novel");
+  const novelDir = dir;
 
   const now = new Date();
   const timestamp = now.toISOString().replace(/[-:T]/g, "").slice(0, 14).replace(/(\d{8})(\d{6})/, "$1-$2");
 
   if (existsSync(novelDir)) {
-    const archiveDir = join(dir, ".archive");
+    const archiveDir = join(dirname(dir), ".archive");
     const archivePath = join(archiveDir, timestamp);
 
     try {
@@ -176,7 +176,7 @@ export async function readNovelFile(
   dir: string,
   relativePath: string,
 ): Promise<string | null> {
-  const filePath = join(dir, ".novel", relativePath);
+  const filePath = join(dir, relativePath);
   if (!(await pathExists(filePath))) {
     return null;
   }
@@ -192,10 +192,10 @@ export async function writeNovelFile(
   relativePath: string,
   content: string,
 ): Promise<void> {
-  const filePath = join(dir, ".novel", relativePath);
+  const filePath = join(dir, relativePath);
   const parts = relativePath.split("/");
   if (parts.length > 1) {
-    const parentDir = join(dir, ".novel", ...parts.slice(0, -1));
+    const parentDir = join(dir, ...parts.slice(0, -1));
     mkdirSync(parentDir, { recursive: true });
   }
   await writeFile(filePath, content, "utf-8");
@@ -209,7 +209,7 @@ export async function globNovelFiles(
   dir: string,
   pattern: string,
 ): Promise<string[]> {
-  const novelDir = join(dir, ".novel");
+  const novelDir = dir;
   if (!existsSync(novelDir)) {
     return [];
   }

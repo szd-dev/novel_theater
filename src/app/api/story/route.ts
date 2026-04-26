@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { initStory, archiveStory, resetStory } from "@/store/story-files";
+import { resolveProjectPath } from "@/lib/project-path";
 
 export async function POST(request: NextRequest) {
   let body: Record<string, unknown>;
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
   }
 
   const { action, name } = body;
-  const dir = process.cwd();
+  const dir = resolveProjectPath();
 
   switch (action) {
     case "init": {

@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { gmAgent } from '@/agents/registry';
 import { getStorySession } from '@/session/manager';
+import { resolveProjectPath } from '@/lib/project-path';
 
 export const maxDuration = 60;
 
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
     console.log(`[API /narrative] Request start, threadId=${threadIdFinal}, messages=${messages.length}`);
 
     const storySession = getStorySession(threadIdFinal);
-    const storyDir = process.cwd();
+    const storyDir = resolveProjectPath();
 
     const lastUserMessage = messages.filter((m) => m.role === 'user').pop();
     const input = lastUserMessage
@@ -48,11 +49,16 @@ export async function POST(req: NextRequest) {
       context: { storyDir },
       maxTurns: 25,
       session: storySession.gmSession,
+      signal: req.signal,
     });
     console.log(`[API /narrative] Agent run started in ${Date.now() - streamStart}ms`);
 
     return createAiSdkUiMessageStreamResponse(stream);
   } catch (error) {
+    if (req.signal.aborted) {
+      console.log('[API /narrative] Request aborted after', Date.now() - startTime, 'ms');
+      return NextResponse.json({ error: 'Request aborted' }, { status: 499 });
+    }
     console.error('[API /narrative] Error after', Date.now() - startTime, 'ms:', error);
     const message =
       error instanceof Error ? error.message : 'Internal server error';

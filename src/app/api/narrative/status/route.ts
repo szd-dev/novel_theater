@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { globNovelFiles, readNovelFile } from '@/store/story-files';
+import { resolveProjectPath } from '@/lib/project-path';
 
 export async function GET(request: NextRequest) {
   const threadId = request.nextUrl.searchParams.get('threadId');
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const storyDir = process.cwd();
+    const storyDir = resolveProjectPath();
 
     const sceneFiles = await globNovelFiles(storyDir, 'scenes/*.md');
     let currentSceneId = '';

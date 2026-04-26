@@ -35,7 +35,7 @@ export default function Home() {
     [threadId]
   );
 
-  const { messages, status, sendMessage } = useChat({ transport });
+  const { messages, status, sendMessage, stop } = useChat({ transport });
 
   const handleSubmit = useCallback(
     (e: FormEvent<HTMLFormElement>) => {
@@ -57,6 +57,7 @@ export default function Home() {
         onInputChange={setInput}
         onSubmit={handleSubmit}
         status={status}
+        onStop={stop}
       />
     </ChatLayout>
   );

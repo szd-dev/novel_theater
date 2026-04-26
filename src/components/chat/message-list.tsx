@@ -19,11 +19,8 @@ function deriveProgress(messages: UIMessage[], status: ChatStatus) {
   let latestStep: number | undefined;
   for (const msg of messages) {
     for (const part of msg.parts) {
-      if (part.type === "tool-invocation") {
-        const toolName =
-          (part as { toolInvocation?: { toolName?: string } }).toolInvocation
-            ?.toolName ??
-          (part as { toolName?: string }).toolName;
+      if (part.type === "dynamic-tool") {
+        const toolName = (part as { toolName?: string }).toolName;
         if (toolName && toolName in TOOL_STEP_MAP) {
           latestStep = TOOL_STEP_MAP[toolName];
         }

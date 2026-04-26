@@ -9,13 +9,10 @@ interface MessageItemProps {
 }
 
 function extractAgentLabel(message: UIMessage): string | null {
-  // New: check tool-invocation parts (Agent-as-Tool pattern)
+  // New: check dynamic-tool parts (Agent-as-Tool pattern)
   for (const part of message.parts) {
-    if (part.type === "tool-invocation") {
-      const toolName =
-        (part as { toolInvocation?: { toolName?: string } }).toolInvocation
-          ?.toolName ??
-        (part as { toolName?: string }).toolName;
+    if (part.type === "dynamic-tool") {
+      const toolName = (part as { toolName?: string }).toolName;
       if (toolName === "call_actor") return "Actor";
       if (toolName === "call_scribe") return "Scribe";
       if (toolName === "call_archivist") return "Archivist";

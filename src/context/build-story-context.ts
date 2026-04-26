@@ -1,5 +1,4 @@
 import { existsSync } from "node:fs";
-import { join } from "node:path";
 import { globNovelFiles, readNovelFile } from "@/store/story-files";
 import { estimateTokens } from "./token-estimator";
 import {
@@ -40,8 +39,7 @@ export async function buildStoryContext(
   dir: string,
   config?: ContextConfig,
 ): Promise<string | null> {
-  const novelDir = join(dir, ".novel");
-  if (!existsSync(novelDir)) return null;
+  if (!existsSync(dir)) return null;
 
   const tokenBudget = config?.tokenBudget ?? DEFAULT_TOKEN_BUDGET;
   const priorities = { ...DEFAULT_PRIORITIES, ...config?.sectionPriorities };
