@@ -45,7 +45,7 @@ export function MessageList({ messages, status, threadId }: MessageListProps) {
   }, [messages, status]);
 
   return (
-    <ScrollArea className="flex-1">
+    <ScrollArea className="flex-1 overflow-hidden">
       <div className="mx-auto max-w-3xl px-4 py-6">
         {messages.length === 0 && (
           <div className="flex h-full min-h-[40vh] flex-col items-center justify-center text-center">

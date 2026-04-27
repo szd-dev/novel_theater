@@ -3,10 +3,17 @@ import { getModel } from '@/lib/models';
 import { readFileTool, writeFileTool, editFileTool, globFilesTool } from '@/tools/file-tools';
 import { resolveCharacterTool } from '@/tools/character-tools';
 import { getArchivistPrompt } from '@/prompts/archivist';
+import { buildStoryContext } from '@/context/build-story-context';
 
 export const archivistAgent = new Agent({
   name: 'Archivist',
   model: getModel('archivist'),
-  instructions: getArchivistPrompt({}),
+  instructions: async (runContext) => {
+    const { storyDir } = runContext.context as { storyDir: string };
+    const storyContext = await buildStoryContext(storyDir);
+    return getArchivistPrompt({
+      storyContext: storyContext ?? undefined,
+    });
+  },
   tools: [readFileTool, writeFileTool, editFileTool, globFilesTool, resolveCharacterTool],
 });

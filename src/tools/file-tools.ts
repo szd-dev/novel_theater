@@ -2,7 +2,7 @@ import { tool } from '@openai/agents';
 import { z } from 'zod';
 import { readNovelFile, writeNovelFile, globNovelFiles } from '@/store/story-files';
 
-function isSafePath(relativePath: string): boolean {
+export function isSafePath(relativePath: string): boolean {
   if (relativePath.includes('..')) return false;
   if (relativePath.startsWith('/')) return false;
   return true;
@@ -32,6 +32,9 @@ export const readFileTool = tool({
     path: z.string().describe('Relative path within .novel/, e.g. "world.md" or "characters/塞莉娅.md"'),
   }),
   execute: async (input, context) => {
+    if (!isSafePath(input.path)) {
+      return `Error: Unsafe path "${input.path}". Path traversal (..) and absolute paths are not allowed.`;
+    }
     const storyDir = getStoryDir(context);
     const content = await readNovelFile(storyDir, input.path);
     return content ?? `File not found: ${input.path}`;
@@ -94,6 +97,9 @@ export const globFilesTool = tool({
     pattern: z.string().describe('Glob pattern, e.g. "characters/*.md" or "scenes"'),
   }),
   execute: async (input, context) => {
+    if (!isSafePath(input.pattern)) {
+      return `Error: Unsafe path "${input.pattern}". Path traversal (..) and absolute paths are not allowed.`;
+    }
     const storyDir = getStoryDir(context);
     const files = await globNovelFiles(storyDir, input.pattern);
     if (files.length === 0) {

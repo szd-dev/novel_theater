@@ -44,5 +44,6 @@ next-env.d.ts
 .novel/
 .sessions/
 .archive/
+.data_store/
 .playwright-mcp
 

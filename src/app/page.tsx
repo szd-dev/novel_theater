@@ -1,41 +1,73 @@
 "use client";
 
+import { useState, useCallback, useEffect, useMemo, type FormEvent } from "react";
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
-import { ChatLayout } from "@/components/chat/chat-layout";
+import { DefaultChatTransport, type UIMessage } from "ai";
+import { ProjectSelector } from "@/components/chat/project-selector";
 import { MessageList } from "@/components/chat/message-list";
 import { ChatInput } from "@/components/chat/chat-input";
 import { SceneIndicator } from "@/components/chat/scene-indicator";
-import { useEffect, useState, useCallback, useMemo, type FormEvent } from "react";
+import { Separator } from "@/components/ui/separator";
 
-export default function Home() {
-  const [threadId, setThreadId] = useState<string>("");
+interface ProjectChatProps {
+  projectId: string;
+  onProjectSelect: (id: string) => void;
+}
+
+function ProjectChat({ projectId, onProjectSelect }: ProjectChatProps) {
   const [input, setInput] = useState("");
-
-  useEffect(() => {
-    const stored = localStorage.getItem("novel-theater-thread-id");
-    if (stored) {
-      setThreadId(stored);
-    } else {
-      const newId =
-        typeof crypto !== "undefined" && crypto.randomUUID
-          ? crypto.randomUUID()
-          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      setThreadId(newId);
-      localStorage.setItem("novel-theater-thread-id", newId);
-    }
-  }, []);
 
   const transport = useMemo(
     () =>
       new DefaultChatTransport({
         api: "/api/narrative",
-        body: { threadId },
+        body: { projectId },
       }),
-    [threadId]
+    [projectId],
   );
 
-  const { messages, status, sendMessage, stop } = useChat({ transport });
+  const { messages, status, sendMessage, stop, setMessages } = useChat({
+    transport,
+    id: projectId,
+    onFinish: ({ messages: currentMessages }) => {
+      if (!projectId || currentMessages.length === 0) return;
+      fetch("/api/narrative", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId, messages: currentMessages }),
+      }).catch(() => { /* best-effort save */ });
+    },
+  });
+
+  const persistMessages = useCallback((msgs: UIMessage[]) => {
+    if (!projectId || msgs.length === 0) return;
+    fetch("/api/narrative", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ projectId, messages: msgs }),
+    }).catch(() => { /* best-effort save */ });
+  }, [projectId]);
+
+  const handleStop = useCallback(() => {
+    // Capture current messages before stopping — onFinish won't fire on abort
+    const currentMessages = [...messages];
+    stop();
+    persistMessages(currentMessages);
+  }, [messages, stop, persistMessages]);
+
+  useEffect(() => {
+    if (!projectId) return;
+    let cancelled = false;
+    fetch(`/api/narrative?projectId=${projectId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (!cancelled) setMessages(data.messages ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setMessages([]);
+      });
+    return () => { cancelled = true; };
+  }, [projectId, setMessages]);
 
   const handleSubmit = useCallback(
     (e: FormEvent<HTMLFormElement>) => {
@@ -45,20 +77,71 @@ export default function Home() {
       sendMessage({ text });
       setInput("");
     },
-    [input, sendMessage]
+    [input, sendMessage],
+  );
+
+  const handleProjectDelete = useCallback(
+    (id: string) => {
+      if (id === projectId) {
+        onProjectSelect(id);
+      }
+    },
+    [projectId, onProjectSelect],
   );
 
   return (
-    <ChatLayout>
-      <SceneIndicator threadId={threadId} />
-      <MessageList messages={messages} status={status} threadId={threadId} />
-      <ChatInput
-        input={input}
-        onInputChange={setInput}
-        onSubmit={handleSubmit}
-        status={status}
-        onStop={stop}
+    <div className="flex h-dvh flex-col bg-background text-foreground">
+      <header className="flex shrink-0 items-center gap-3 px-4 py-3">
+        <h1 className="text-lg font-semibold tracking-tight">自由剧场</h1>
+        <span className="text-xs text-muted-foreground">Free Theater</span>
+      </header>
+      <Separator />
+      <div className="flex min-h-0 flex-1 flex-row">
+        <aside className="flex w-56 shrink-0 flex-col border-r border-border">
+          <ProjectSelector
+            currentProjectId={projectId}
+            onProjectSelect={onProjectSelect}
+            onProjectDelete={handleProjectDelete}
+            variant="sidebar"
+          />
+        </aside>
+        <main className="flex min-h-0 flex-1 flex-col">
+          <SceneIndicator threadId={projectId} />
+          <MessageList messages={messages} status={status} threadId={projectId} />
+          <ChatInput
+            input={input}
+            onInputChange={setInput}
+            onSubmit={handleSubmit}
+            status={status}
+            onStop={handleStop}
+          />
+        </main>
+      </div>
+    </div>
+  );
+}
+
+export default function Home() {
+  const [projectId, setProjectId] = useState<string | null>(null);
+
+  const handleProjectSelect = useCallback((id: string) => {
+    setProjectId(id);
+  }, []);
+
+  if (!projectId) {
+    return (
+      <ProjectSelector
+        currentProjectId={null}
+        onProjectSelect={handleProjectSelect}
       />
-    </ChatLayout>
+    );
+  }
+
+  return (
+    <ProjectChat
+      key={projectId}
+      projectId={projectId}
+      onProjectSelect={handleProjectSelect}
+    />
   );
 }

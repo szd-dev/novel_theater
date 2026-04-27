@@ -17,9 +17,7 @@ function buildScribeStateBlock(state: ScribePromptState): string {
   if (state.styleGuide) {
     lines.push("", "## 风格指南", state.styleGuide);
   }
-  if (state.interactionLog) {
-    lines.push("", "## 本幕交互记录", state.interactionLog);
-  }
+
   if (state.storyContext) {
     lines.push("", "## 故事上下文", state.storyContext);
   }

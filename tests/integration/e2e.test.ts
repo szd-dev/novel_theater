@@ -1,10 +1,10 @@
 import { test, describe, expect, beforeAll, afterAll } from "bun:test";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { mkdirSync, writeFileSync, rmSync, existsSync } from "node:fs";
+import { rmSync, existsSync } from "node:fs";
 
 import { gmAgent, actorAgent, scribeAgent, archivistAgent } from "@/agents/registry";
-import { createStorySession, getStorySession, getCharacterSession, clearStorySession } from "@/session/manager";
+import { createStorySession, getStorySession, getOrCreateStorySession, clearStorySession } from "@/session/manager";
 import { initStory, archiveStory, resetStory } from "@/store/story-files";
 
 describe("自由剧场 v2 Agent Architecture", () => {
@@ -15,7 +15,11 @@ describe("自由剧场 v2 Agent Architecture", () => {
       expect(toolNames).toContain("call_actor");
       expect(toolNames).toContain("call_scribe");
       expect(toolNames).toContain("call_archivist");
-      expect(toolNames.length).toBe(3);
+      expect(toolNames).toContain("clear_interaction_log");
+      expect(toolNames).toContain("read_file");
+      expect(toolNames).toContain("write_file");
+      expect(toolNames).toContain("glob_files");
+      expect(toolNames.length).toBe(7);
     });
 
     test("Actor agent has correct tools", () => {
@@ -39,32 +43,31 @@ describe("自由剧场 v2 Agent Architecture", () => {
   });
 
   describe("Session management", () => {
+    const testDir = join(tmpdir(), `novel-session-test-${Date.now()}`);
+
     test("createStorySession creates session with gmSession", () => {
-      const session = createStorySession("test-thread-1");
-      expect(session.threadId).toBe("test-thread-1");
+      const session = createStorySession("test-thread-1", testDir);
+      expect(session.projectId).toBe("test-thread-1");
       expect(session.gmSession).toBeDefined();
-      expect(session.characterSessions).toBeDefined();
+      expect(session.subSessions).toBeDefined();
     });
 
-    test("getStorySession returns same session", () => {
-      const s1 = createStorySession("test-thread-2");
-      const s2 = getStorySession("test-thread-2");
+    test("getOrCreateStorySession returns same session", () => {
+      const s1 = createStorySession("test-thread-2", testDir);
+      const s2 = getOrCreateStorySession("test-thread-2", testDir);
       expect(s1).toBe(s2);
     });
 
-    test("getCharacterSession creates independent sessions", () => {
-      const session = getStorySession("test-thread-3");
-      const charA = getCharacterSession("test-thread-3", "塞莉娅");
-      const charB = getCharacterSession("test-thread-3", "希尔薇");
-      expect(charA).not.toBe(charB);
+    test("getStorySession returns undefined when not found", () => {
+      const session = getStorySession("nonexistent");
+      expect(session).toBeUndefined();
     });
 
     test("clearStorySession removes session", () => {
-      createStorySession("test-thread-4");
-      clearStorySession("test-thread-4");
-      const newSession = getStorySession("test-thread-4");
-      // Should create a new session (different from original)
-      expect(newSession).toBeDefined();
+      createStorySession("test-thread-4", testDir);
+      clearStorySession("test-thread-4", testDir);
+      const removed = getStorySession("test-thread-4");
+      expect(removed).toBeUndefined();
     });
   });
 

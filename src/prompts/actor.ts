@@ -21,9 +21,7 @@ function buildActorStateBlock(character: string, state: ActorPromptState): strin
   if (state.storyContext) {
     lines.push("", "## 故事上下文", state.storyContext);
   }
-  if (state.interactionLog) {
-    lines.push("", "## 本幕交互记录", state.interactionLog);
-  }
+
 
   return lines.join("\n");
 }

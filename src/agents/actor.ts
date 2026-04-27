@@ -1,17 +1,10 @@
 import { Agent } from '@openai/agents';
 import { getModel } from '@/lib/models';
 import { resolveCharacterTool } from '@/tools/character-tools';
-import { readFileTool } from '@/tools/file-tools';
+import { readFileTool, globFilesTool } from '@/tools/file-tools';
 import { getActorPrompt } from '@/prompts/actor';
-import { readNovelFile, globNovelFiles } from '@/store/story-files';
-
-async function findLatestScene(storyDir: string): Promise<string | null> {
-  const sceneFiles = await globNovelFiles(storyDir, 'scenes/*.md');
-  if (sceneFiles.length === 0) return null;
-  // sceneFiles are sorted, last one is latest
-  const latest = sceneFiles[sceneFiles.length - 1];
-  return readNovelFile(storyDir, `scenes/${latest}`);
-}
+import { readNovelFile } from '@/store/story-files';
+import { buildStoryContext } from '@/context/build-story-context';
 
 export const actorAgent = new Agent({
   name: 'Actor',
@@ -27,12 +20,12 @@ export const actorAgent = new Agent({
       }
     }
 
-    const latestScene = await findLatestScene(storyDir);
+    const storyContext = await buildStoryContext(storyDir);
 
     return getActorPrompt(characterName ?? '', {
       characterFile: characterContent || undefined,
-      storyContext: latestScene || undefined,
+      storyContext: storyContext ?? undefined,
     });
   },
-  tools: [resolveCharacterTool, readFileTool],
+  tools: [resolveCharacterTool, readFileTool, globFilesTool],
 });

@@ -19,15 +19,11 @@ export interface ActorPromptState {
   /** Full character .md content */
   characterFile?: string;
   storyContext?: string; // from buildStoryContext()
-  /** Formatted interaction log entries */
-  interactionLog?: string;
 }
 
 export interface ScribePromptState {
   /** From style.md */
   styleGuide?: string;
-  /** Formatted interaction log */
-  interactionLog?: string;
   storyContext?: string; // from buildStoryContext()
 }
 

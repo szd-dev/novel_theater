@@ -5,6 +5,7 @@ import type { UIMessage } from "ai";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { AgentLabel, type AgentKey } from "@/components/chat/agent-label";
+import { ToolCallCard } from "@/components/chat/tool-call-card";
 import { splitBySteps } from "@/components/chat/message-segments";
 import { SessionModal } from "@/components/chat/session-modal";
 
@@ -60,35 +61,22 @@ function renderParts(message: UIMessage) {
       return null;
     }
     if (part.type === "dynamic-tool") {
-      const dp = part as { toolName?: string; state?: string; output?: string; input?: unknown };
-      const toolName = dp.toolName ?? "";
-      const state = dp.state ?? "";
-      const agentKey = getAgentKey(toolName);
-
-      if (state === "output-available") {
-        return (
-          <div key={i} className="flex flex-col gap-1">
-            <AgentLabel agent={agentKey} />
-            {dp.output && (
-              <span className="whitespace-pre-wrap text-sm">{String(dp.output)}</span>
-            )}
-          </div>
-        );
-      }
-
-      if (state === "output-error") {
-        return (
-          <div key={i} className="flex flex-col gap-1">
-            <AgentLabel agent={agentKey} />
-            <span className="text-sm text-destructive">Error</span>
-          </div>
-        );
-      }
-
+      const dp = part as {
+        toolName?: string;
+        state?: "input-streaming" | "input-available" | "output-available" | "output-error";
+        input?: Record<string, unknown>;
+        output?: string;
+        error?: string;
+      };
       return (
-        <div key={i} className="flex items-center gap-1.5">
-          <AgentLabel agent={agentKey} isActive={true} />
-        </div>
+        <ToolCallCard
+          key={i}
+          toolName={dp.toolName ?? ""}
+          state={dp.state ?? "input-streaming"}
+          input={dp.input}
+          output={dp.output}
+          error={dp.error}
+        />
       );
     }
     return null;
@@ -108,20 +96,23 @@ function renderSegmentParts(parts: UIMessage["parts"]) {
     if (part.type.startsWith("data-")) return null;
     if (part.type === "step-start") return null;
     if (part.type === "dynamic-tool") {
-      const dp = part as { toolName?: string; state?: string; output?: string };
-      if (dp.state === "output-available" && dp.output) {
-        return (
-          <span key={i} className="whitespace-pre-wrap text-sm">
-            {String(dp.output)}
-          </span>
-        );
-      }
-      if (dp.state === "output-error") {
-        return (
-          <span key={i} className="text-sm text-destructive">Error</span>
-        );
-      }
-      return null;
+      const dp = part as {
+        toolName?: string;
+        state?: "input-streaming" | "input-available" | "output-available" | "output-error";
+        input?: Record<string, unknown>;
+        output?: string;
+        error?: string;
+      };
+      return (
+        <ToolCallCard
+          key={i}
+          toolName={dp.toolName ?? ""}
+          state={dp.state ?? "input-streaming"}
+          input={dp.input}
+          output={dp.output}
+          error={dp.error}
+        />
+      );
     }
     return null;
   });

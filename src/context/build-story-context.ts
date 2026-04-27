@@ -12,10 +12,12 @@ import {
   findLatestScene,
 } from "./extract";
 import { findCharacterByName } from "./character-resolver";
+import { readInteractionLog } from "@/store/interaction-log";
 
 export interface ContextConfig {
   tokenBudget?: number;
   sectionPriorities?: Record<string, number>;
+  excludeInteractionLog?: boolean;
 }
 
 export interface ContextSection {
@@ -211,5 +213,15 @@ export async function buildStoryContext(
   }
 
   if (outputParts.length === 0) return null;
-  return outputParts.join("\n\n");
+
+  let result = outputParts.join("\n\n");
+
+  if (!config?.excludeInteractionLog) {
+    const interactionLog = readInteractionLog(dir);
+    if (interactionLog && interactionLog.trim()) {
+      result += `\n\n${interactionLog}`;
+    }
+  }
+
+  return result;
 }

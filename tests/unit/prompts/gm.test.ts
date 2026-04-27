@@ -13,8 +13,6 @@ import type {
 const FORBIDDEN_PATTERNS = [
   /task\(/,
   /task_id/,
-  /append_interaction/,
-  /end_interaction/,
   /Command\(/,
   /LangGraph/,
   /state\.interactionLog/,
@@ -112,18 +110,9 @@ describe("getActorPrompt", () => {
     expect(result).toContain("> 公主");
   });
 
-  test("includes interaction log when provided", () => {
-    const state: ActorPromptState = {
-      interactionLog: "塞莉娅说了什么",
-    };
-    const result = getActorPrompt("艾蕾雅", state);
-    expect(result).toContain("塞莉娅说了什么");
-  });
-
   test("no forbidden patterns", () => {
     const state: ActorPromptState = {
       characterFile: "内容",
-      interactionLog: "记录",
     };
     const result = getActorPrompt("角色", state);
     checkNoForbiddenPatterns(result, "Actor");
@@ -140,18 +129,9 @@ describe("getScribePrompt", () => {
     expect(result).toContain("自由剧场 Scribe");
   });
 
-  test("includes interaction log", () => {
-    const state: ScribePromptState = {
-      interactionLog: "角色A：你好",
-    };
-    const result = getScribePrompt(state);
-    expect(result).toContain("角色A：你好");
-  });
-
   test("no forbidden patterns", () => {
     const state: ScribePromptState = {
       styleGuide: "风格",
-      interactionLog: "记录",
     };
     const result = getScribePrompt(state);
     checkNoForbiddenPatterns(result, "Scribe");
