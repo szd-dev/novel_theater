@@ -13,7 +13,7 @@ export function isValidCharacterFile(content: string): boolean {
 }
 
 export function isValidSceneFile(content: string): boolean {
-  const required = ['## 地点', '## 时间', '## 在场角色', '## 经过'];
+  const required = ['## 地点', '## 时间', '## 在场角色', '## 初始剧本', '## 经过'];
   return required.every((section) => content.includes(section));
 }
 

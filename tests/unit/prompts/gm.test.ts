@@ -33,21 +33,15 @@ describe("getGMPrompt", () => {
     expect(result.length).toBeGreaterThan(100);
     expect(result).toContain("自由剧场 GM");
     expect(result).toContain("核心职责");
-    expect(result).toContain("场景生命周期");
+    expect(result).toContain("场景骨架");
   });
 
   test("includes state block when provided", () => {
     const state: GMPromptState = {
-      currentSceneId: "s001",
-      currentLocation: "旧酒馆",
-      currentTime: "秋夜",
-      activeCharacter: "测试角色",
+      storyContext: "角色在酒馆中，场景s001",
     };
     const result = getGMPrompt(state);
-    expect(result).toContain("s001");
-    expect(result).toContain("旧酒馆");
-    expect(result).toContain("秋夜");
-    expect(result).toContain("测试角色");
+    expect(result).toContain("角色在酒馆中，场景s001");
   });
 
   test("includes story context when provided", () => {
@@ -60,7 +54,6 @@ describe("getGMPrompt", () => {
 
   test("no forbidden patterns", () => {
     const state: GMPromptState = {
-      currentSceneId: "s001",
       storyContext: "测试上下文",
     };
     const result = getGMPrompt(state);
@@ -91,6 +84,30 @@ describe("getGMPrompt", () => {
     // Verbosity no longer affects output — all tiers produce the same prompt
     expect(normal).toEqual(detailed);
     expect(normal).toEqual(minimal);
+  });
+
+  test("includes new four-stage flow names", () => {
+    const state: GMPromptState = {};
+    const result = getGMPrompt(state);
+    expect(result).toContain("准备（Orient）");
+    expect(result).toContain("场景编写（Script）");
+    expect(result).toContain("演绎循环（Enact）");
+    expect(result).toContain("收束（Resolve）");
+  });
+
+  test("does not contain old stage names", () => {
+    const state: GMPromptState = {};
+    const result = getGMPrompt(state);
+    expect(result).not.toContain("角色发现");
+    expect(result).not.toContain("场景编排");
+    expect(result).not.toContain("分步演绎");
+    expect(result).not.toContain("后处理");
+  });
+
+  test("includes 初始剧本 specification", () => {
+    const state: GMPromptState = {};
+    const result = getGMPrompt(state);
+    expect(result).toContain("初始剧本");
   });
 });
 

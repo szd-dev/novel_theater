@@ -86,7 +86,7 @@ const callActorTool = tool({
     const result = await run(actorAgent, `${input.character}: ${input.direction}`, {
       context: { storyDir, characterName: input.character },
       session: subSession,
-      maxTurns: 25,
+      maxTurns: 10,
       callModelInputFilter: createPromptLogFilter(storyDir),
     });
 

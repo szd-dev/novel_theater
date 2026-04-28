@@ -8,10 +8,6 @@ export interface PromptConfig {
 }
 
 export interface GMPromptState {
-  currentSceneId?: string;
-  currentLocation?: string;
-  currentTime?: string;
-  activeCharacter?: string;
   storyContext?: string; // from buildStoryContext()
 }
 

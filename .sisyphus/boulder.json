@@ -1,67 +1,49 @@
 {
-  "active_plan": "/Users/qihoo/codebase/github/novel_theater/.sisyphus/plans/file-editing.md",
-  "started_at": "2026-04-28T09:51:50.419Z",
+  "active_plan": "/data/novel_theater/.sisyphus/plans/gm-stage-refactor.md",
+  "started_at": "2026-04-28T16:41:20.034Z",
   "session_ids": [
-    "ses_22c7f73a0ffeKU7XxV8AEdG0yB",
-    "ses_22c552292ffezm7RA4JM7ZXTXZ",
-    "ses_22c54e631ffeKYI1wfc8PaESYW",
-    "ses_22c54b05bffe2R5PNqO6RbJlNn",
-    "ses_22c547997ffeJ0Y908CXop5BU9"
+    "ses_22b088c82ffeOhgioblUpCP55m"
   ],
   "session_origins": {
-    "ses_22c7f73a0ffeKU7XxV8AEdG0yB": "direct",
-    "ses_22c552292ffezm7RA4JM7ZXTXZ": "appended",
-    "ses_22c54e631ffeKYI1wfc8PaESYW": "appended",
-    "ses_22c54b05bffe2R5PNqO6RbJlNn": "appended",
-    "ses_22c547997ffeJ0Y908CXop5BU9": "appended"
+    "ses_22b088c82ffeOhgioblUpCP55m": "direct"
   },
-  "plan_name": "file-editing",
+  "plan_name": "gm-stage-refactor",
   "agent": "atlas",
   "task_sessions": {
     "todo:1": {
       "task_key": "todo:1",
       "task_label": "1",
-      "task_title": "Extract shared validation module",
-      "session_id": "ses_22c7cba26ffe9TeklbzOfFXa02",
+      "task_title": "validation.ts — 添加 ## 初始剧本 必填验证",
+      "session_id": "ses_22b061fc6ffehd2gVBsFdusCGx",
       "agent": "Sisyphus-Junior",
       "category": "quick",
-      "updated_at": "2026-04-28T10:03:55.425Z"
+      "updated_at": "2026-04-28T16:44:24.304Z"
     },
-    "todo:3": {
-      "task_key": "todo:3",
-      "task_label": "3",
-      "task_title": "File CRUD API endpoints",
-      "session_id": "ses_22c6f9b37ffe7PsHQVQRJsjOj6",
-      "agent": "Sisyphus-Junior",
-      "category": "unspecified-high",
-      "updated_at": "2026-04-28T10:12:12.891Z"
-    },
-    "todo:6": {
-      "task_key": "todo:6",
-      "task_label": "6",
-      "task_title": "StoryFileTree sidebar component",
-      "session_id": "ses_22c60b5c0ffeiF274B2jzV361h",
+    "todo:4": {
+      "task_key": "todo:4",
+      "task_label": "4",
+      "task_title": "archivist.ts prompt — 场景模板添加 ## 初始剧本",
+      "session_id": "ses_22afee542ffetStJciOuNdHEgd",
       "agent": "Sisyphus-Junior",
       "category": "quick",
-      "updated_at": "2026-04-28T10:25:44.368Z"
+      "updated_at": "2026-04-28T16:52:19.102Z"
     },
-    "todo:9": {
-      "task_key": "todo:9",
-      "task_label": "9",
-      "task_title": "Directives UI — creation, editing, and badge in file tree",
-      "session_id": "ses_22c5e9c23ffe6NcpK3PL69jYj3",
+    "todo:7": {
+      "task_key": "todo:7",
+      "task_label": "7",
+      "task_title": "registry.ts — Actor maxTurns 25→10",
+      "session_id": "ses_22af59d1bffeGAv9GyUXMl3X9C",
       "agent": "Sisyphus-Junior",
-      "category": "unspecified-high",
-      "updated_at": "2026-04-28T10:36:40.643Z"
+      "category": "quick",
+      "updated_at": "2026-04-28T17:02:23.289Z"
     },
     "final-wave:f1": {
       "task_key": "final-wave:f1",
       "task_label": "F1",
       "task_title": "**Plan Compliance Audit** — `oracle`",
-      "session_id": "ses_22c547997ffeJ0Y908CXop5BU9",
-      "agent": "Sisyphus-Junior",
-      "category": "deep",
-      "updated_at": "2026-04-28T10:45:31.960Z"
+      "session_id": "ses_22aed98f6ffeqo4pss6oI9367c",
+      "agent": "oracle",
+      "updated_at": "2026-04-28T17:12:30.204Z"
     }
   }
 }

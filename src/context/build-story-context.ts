@@ -26,13 +26,16 @@ export interface ContextSection {
   priority: number;
 }
 
-const DEFAULT_TOKEN_BUDGET = 2000;
+const DEFAULT_TOKEN_BUDGET = 10000;
 
 const DEFAULT_PRIORITIES: Record<string, number> = {
   作者指令: -1,
+  故事进度: -1,
+  前序场景: 0,
   在场角色: 0,
   当前场景: 1,
   场景地点: 1,
+  文件目录: 3,
   已知角色: 2,
   剧情方向: 2,
   角色详情: 4,
@@ -156,6 +159,51 @@ export async function buildStoryContext(
   }
 
   const sections: ContextSection[] = [];
+
+  // 故事进度 — scene count and current scene number
+  const sceneFiles = await globNovelFiles(dir, "scenes/*.md");
+  const sceneCount = sceneFiles.length;
+  const currentSceneNum = sceneCount + 1;
+  const currentSceneId = `s${String(currentSceneNum).padStart(3, '0')}`;
+  sections.push({
+    label: "故事进度",
+    content: `场景总数: ${sceneCount}，当前场景: ${currentSceneId}`,
+    priority: priorities["故事进度"],
+  });
+
+  // 前序场景摘要 — previous scene's 经过 + 关键事实
+  if (latestSceneName) {
+    const prevSceneContent = await readNovelFile(dir, `scenes/${latestSceneName}`);
+    if (prevSceneContent) {
+      const prevSummary = extractSectionLines(prevSceneContent, "经过", 10);
+      const prevFacts = extractSectionLines(prevSceneContent, "关键事实", 5);
+      if (prevSummary || prevFacts) {
+        const prevParts: string[] = [];
+        if (prevSummary) prevParts.push(prevSummary);
+        if (prevFacts) prevParts.push(prevFacts);
+        sections.push({
+          label: "前序场景",
+          content: prevParts.join("\n"),
+          priority: priorities["前序场景"],
+        });
+      }
+    }
+  }
+
+  // 文件目录 — hardcoded directory structure
+  sections.push({
+    label: "文件目录",
+    content: `.novel/
+├── world.md          # 世界设定——地点、势力、规则
+├── style.md          # 风格指南
+├── timeline.md       # 时间线
+├── plot.md           # 剧情线
+├── debts.md          # 传播债务
+├── chapters.md       # 章节结构
+├── characters/       # 角色文件（{角色名}.md）
+└── scenes/           # 场景记录（s001.md, s002.md, ...）`,
+    priority: priorities["文件目录"],
+  });
 
   if (sceneCharL0.length > 0) {
     sections.push({

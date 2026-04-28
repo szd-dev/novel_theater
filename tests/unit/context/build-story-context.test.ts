@@ -247,4 +247,100 @@ describe("buildStoryContext", () => {
       rmSync(dDir, { recursive: true, force: true });
     }
   });
+
+  test("includes 故事进度 section", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "novel-test-progress-"));
+    try {
+      await initStory(dir);
+      await writeNovelFile(
+        dir,
+        "scenes/s001.md",
+        `# s001\n\n## 地点\n旧酒馆\n\n## 时间\n黄昏\n\n## 在场角色\n- **测试角色**\n\n## 初始剧本\n角色进入酒馆\n\n## 经过\n角色进入酒馆，与酒保交谈。\n`,
+      );
+      await writeNovelFile(
+        dir,
+        "characters/测试角色.md",
+        `# 测试角色\n> 一个勇敢的冒险者\n\n## 身份\n流浪剑客\n`,
+      );
+      const result = await buildStoryContext(dir);
+      expect(result).not.toBeNull();
+      expect(result!).toContain("场景总数");
+      expect(result!).toContain("当前场景");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("includes 前序场景 section when previous scene exists", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "novel-test-prev-"));
+    try {
+      await initStory(dir);
+      await writeNovelFile(
+        dir,
+        "scenes/s001.md",
+        `# s001\n\n## 地点\n旧酒馆\n\n## 时间\n黄昏\n\n## 在场角色\n- **测试角色**\n\n## 初始剧本\n角色进入酒馆\n\n## 经过\n角色进入酒馆，与酒保交谈。\n\n## 关键事实\n- 酒保透露了秘密\n`,
+      );
+      await writeNovelFile(
+        dir,
+        "characters/测试角色.md",
+        `# 测试角色\n> 一个勇敢的冒险者\n\n## 身份\n流浪剑客\n`,
+      );
+      const result = await buildStoryContext(dir);
+      expect(result).not.toBeNull();
+      expect(result!).toContain("前序场景");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("includes 文件目录 section with hardcoded directory tree", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "novel-test-filedir-"));
+    try {
+      await initStory(dir);
+      const result = await buildStoryContext(dir);
+      expect(result).not.toBeNull();
+      expect(result!).toContain("文件目录");
+      expect(result!).toContain("world.md");
+      expect(result!).toContain("characters/");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("does not include 前序场景 when no scenes exist", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "novel-test-noprev-"));
+    try {
+      await initStory(dir);
+      const result = await buildStoryContext(dir);
+      if (result) {
+        expect(result).not.toContain("前序场景");
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("DEFAULT_TOKEN_BUDGET allows full content without truncation", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "novel-test-default-budget-"));
+    try {
+      await initStory(dir);
+      await writeNovelFile(
+        dir,
+        "scenes/s001.md",
+        `# s001\n\n## 地点\n旧酒馆\n\n## 时间\n黄昏\n\n## 在场角色\n- **测试角色**\n\n## 初始剧本\n角色进入酒馆\n\n## 经过\n角色进入酒馆，与酒保交谈。\n`,
+      );
+      await writeNovelFile(
+        dir,
+        "characters/测试角色.md",
+        `# 测试角色\n> 一个勇敢的冒险者\n\n## 身份\n流浪剑客\n\n## 当前状态\n精神饱满\n`,
+      );
+      const result = await buildStoryContext(dir);
+      expect(result).not.toBeNull();
+      expect(result!).toContain("测试角色");
+      expect(result!).toContain("旧酒馆");
+      expect(result!).toContain("精神饱满");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });

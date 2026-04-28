@@ -57,7 +57,7 @@ describe('isValidCharacterFile', () => {
 
 describe('isValidSceneFile', () => {
   test('accepts valid scene file with all sections', () => {
-    const content = '## 地点\n某处\n## 时间\n某时\n## 在场角色\n某人\n## 经过\n某事';
+    const content = '## 地点\n某处\n## 时间\n某时\n## 在场角色\n某人\n## 初始剧本\n某剧本\n## 经过\n某事';
     expect(isValidSceneFile(content)).toBe(true);
   });
 
@@ -65,6 +65,10 @@ describe('isValidSceneFile', () => {
     expect(isValidSceneFile('## 地点\n某处\n## 时间\n某时')).toBe(false);
     expect(isValidSceneFile('## 地点\n某处\n## 时间\n某时\n## 在场角色\n某人')).toBe(false);
     expect(isValidSceneFile('')).toBe(false);
+  });
+
+  test('rejects missing 初始剧本', () => {
+    expect(isValidSceneFile('## 地点\n某处\n## 时间\n某时\n## 在场角色\n某人\n## 经过\n某事')).toBe(false);
   });
 });
 
