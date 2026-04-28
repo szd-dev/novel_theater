@@ -1,7 +1,7 @@
 import { Agent } from '@openai/agents';
 import { getModel } from '@/lib/models';
 import { readFileTool, writeFileTool, editFileTool, globFilesTool } from '@/tools/file-tools';
-import { resolveCharacterTool } from '@/tools/character-tools';
+import { resolveCharacterTool, listCharactersTool } from '@/tools/character-tools';
 import { getArchivistPrompt } from '@/prompts/archivist';
 import { buildStoryContext } from '@/context/build-story-context';
 
@@ -15,5 +15,5 @@ export const archivistAgent = new Agent({
       storyContext: storyContext ?? undefined,
     });
   },
-  tools: [readFileTool, writeFileTool, editFileTool, globFilesTool, resolveCharacterTool],
+  tools: [readFileTool, writeFileTool, editFileTool, globFilesTool, resolveCharacterTool, listCharactersTool],
 });
