@@ -33,10 +33,10 @@ function normalizeModelName(modelName: string): string {
 
 function resolveModelConfig(role: AgentRole): ModelConfig {
   const defaults: Record<AgentRole, string> = {
-    gm: "claude-sonnet-4-20250514",
-    actor: "claude-sonnet-4-20250514",
-    scribe: "claude-sonnet-4-20250514",
-    archivist: "gpt-4o-mini",
+    gm: "qwen/qwen3.6-27B",
+    actor: "deepseek/deepseek-v4-flash",
+    scribe: "deepseek/deepseek-v4-flash",
+    archivist: "qwen/qwen3.6-27B",
   };
 
   const envKeys: Record<AgentRole, string> = {
