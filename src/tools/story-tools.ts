@@ -1,6 +1,7 @@
 import { tool } from '@openai/agents';
 import { z } from 'zod';
 import { resetStory } from '@/store/story-files';
+import { toolResult, toolError } from '@/lib/tool-result';
 
 function getStoryDir(context: unknown): string {
   const ctx = context as { context?: { storyDir?: string } } | undefined;
@@ -13,6 +14,10 @@ export const resetStoryTool = tool({
   parameters: z.object({}),
   execute: async (_input, context) => {
     const storyDir = getStoryDir(context);
-    return await resetStory(storyDir);
+    const result = await resetStory(storyDir);
+    if (result.startsWith('❌')) {
+      return toolError(result);
+    }
+    return toolResult(result);
   },
 });

@@ -1,6 +1,7 @@
 import { tool } from '@openai/agents';
 import { z } from 'zod';
 import { findCharacterByName, listAllCharacters } from '@/context/character-resolver';
+import { toolResult, toolError } from '@/lib/tool-result';
 
 function getStoryDir(context: unknown): string {
   const ctx = context as { context?: { storyDir?: string } } | undefined;
@@ -17,9 +18,9 @@ export const resolveCharacterTool = tool({
     const storyDir = getStoryDir(context);
     const result = await findCharacterByName(storyDir, input.name);
     if (result === null) {
-      return `Character "${input.name}" not found in .novel/characters/.`;
+      return toolError(`Character "${input.name}" not found in .novel/characters/.`);
     }
-    return `Found character: ${result}`;
+    return toolResult(`Found character: ${result}`);
   },
 });
 
@@ -31,8 +32,8 @@ export const listCharactersTool = tool({
     const storyDir = getStoryDir(context);
     const characters = await listAllCharacters(storyDir);
     if (characters.length === 0) {
-      return 'No characters found in .novel/characters/.';
+      return toolResult('No characters found in .novel/characters/.');
     }
-    return `Characters (${characters.length}):\n${characters.map((c) => `  - ${c.name}: ${c.l0}`).join('\n')}`;
+    return toolResult(`Characters (${characters.length}):\n${characters.map((c) => `  - ${c.name}: ${c.l0}`).join('\n')}`);
   },
 });

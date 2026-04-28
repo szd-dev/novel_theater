@@ -8,6 +8,7 @@ import { archivistAgent } from './archivist';
 import { addExecutionLog, createSubSession, getSubSession } from '@/session/manager';
 import { appendInteractionLog, clearInteractionLog } from '@/store/interaction-log';
 import { readFileTool, writeFileTool, globFilesTool } from '@/tools/file-tools';
+import { toolResult, toolError } from '@/lib/tool-result';
 import type { ExecutionLog } from '@/session/execution-log';
 import type { RunResult, Session } from '@openai/agents';
 import { createPromptLogFilter } from '@/lib/prompt-logger';
@@ -61,7 +62,7 @@ const callActorTool = tool({
     sessionId: z.string().optional().describe('已有的 sub-session ID，传入则复用，不传则新建'),
   }),
   execute: async (input) => {
-    if (!currentProjectDir) return 'Error: No active project';
+    if (!currentProjectDir) return toolError('No active project');
     const storyDir = join(currentProjectDir, '.novel');
 
     let isNewSession = false;
@@ -73,7 +74,7 @@ const callActorTool = tool({
         subSession = existing;
         sessionId = input.sessionId;
       } else {
-        return `Error: Session ${input.sessionId} not found. Start a new session by calling without sessionId.`;
+        return toolError(`Session ${input.sessionId} not found. Start a new session by calling without sessionId.`);
       }
     } else {
       const created = createSubSession(currentProjectId!, currentProjectDir!, 'Actor', input.character);
@@ -99,7 +100,7 @@ const callActorTool = tool({
     const log = buildExecutionLog('Actor', `${input.character}: ${input.direction}`, result);
     if (log && currentProjectId) addExecutionLog(currentProjectId, log);
 
-    return JSON.stringify({ output: String(result.finalOutput ?? ''), sessionId, isNewSession });
+    return toolResult(JSON.stringify({ output: String(result.finalOutput ?? ''), sessionId, isNewSession }));
   },
 });
 
@@ -111,7 +112,7 @@ const callScribeTool = tool({
     sessionId: z.string().optional().describe('已有的 sub-session ID，传入则复用，不传则新建'),
   }),
   execute: async (input) => {
-    if (!currentProjectDir) return 'Error: No active project';
+    if (!currentProjectDir) return toolError('No active project');
     const storyDir = join(currentProjectDir, '.novel');
 
     let isNewSession = false;
@@ -123,7 +124,7 @@ const callScribeTool = tool({
         subSession = existing;
         sessionId = input.sessionId;
       } else {
-        return `Error: Session ${input.sessionId} not found. Start a new session by calling without sessionId.`;
+        return toolError(`Session ${input.sessionId} not found. Start a new session by calling without sessionId.`);
       }
     } else {
       const created = createSubSession(currentProjectId!, currentProjectDir!, 'Scribe');
@@ -142,7 +143,7 @@ const callScribeTool = tool({
     const log = buildExecutionLog('Scribe', input.sceneContext, result);
     if (log && currentProjectId) addExecutionLog(currentProjectId, log);
 
-    return JSON.stringify({ output: String(result.finalOutput ?? ''), sessionId, isNewSession });
+    return toolResult(JSON.stringify({ output: String(result.finalOutput ?? ''), sessionId, isNewSession }));
   },
 });
 
@@ -155,7 +156,7 @@ const callArchivistTool = tool({
     sessionId: z.string().optional().describe('已有的 sub-session ID，传入则复用，不传则新建'),
   }),
   execute: async (input) => {
-    if (!currentProjectDir) return 'Error: No active project';
+    if (!currentProjectDir) return toolError('No active project');
     const storyDir = join(currentProjectDir, '.novel');
 
     let isNewSession = false;
@@ -167,7 +168,7 @@ const callArchivistTool = tool({
         subSession = existing;
         sessionId = input.sessionId;
       } else {
-        return `Error: Session ${input.sessionId} not found. Start a new session by calling without sessionId.`;
+        return toolError(`Session ${input.sessionId} not found. Start a new session by calling without sessionId.`);
       }
     } else {
       const created = createSubSession(currentProjectId!, currentProjectDir!, 'Archivist');
@@ -188,7 +189,7 @@ const callArchivistTool = tool({
     const log = buildExecutionLog('Archivist', prompt, result);
     if (log && currentProjectId) addExecutionLog(currentProjectId, log);
 
-    return JSON.stringify({ output: String(result.finalOutput ?? ''), sessionId, isNewSession });
+    return toolResult(JSON.stringify({ output: String(result.finalOutput ?? ''), sessionId, isNewSession }));
   },
 });
 
@@ -197,9 +198,9 @@ const clearInteractionLogTool = tool({
   description: '清除当前交互记录文件。通常在场景结束时调用。',
   parameters: z.object({}),
   execute: async () => {
-    if (!currentProjectDir) return 'Error: No active project';
+    if (!currentProjectDir) return toolError('No active project');
     const storyDir = join(currentProjectDir, '.novel');
-    return clearInteractionLog(storyDir);
+    return toolResult(clearInteractionLog(storyDir));
   },
 });
 

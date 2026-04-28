@@ -1,6 +1,7 @@
 import { tool } from '@openai/agents';
 import { z } from 'zod';
 import { readNovelFile, writeNovelFile, globNovelFiles } from '@/store/story-files';
+import { toolResult, toolError } from '@/lib/tool-result';
 
 export function isSafePath(relativePath: string): boolean {
   if (relativePath.includes('..')) return false;
@@ -33,11 +34,13 @@ export const readFileTool = tool({
   }),
   execute: async (input, context) => {
     if (!isSafePath(input.path)) {
-      return `Error: Unsafe path "${input.path}". Path traversal (..) and absolute paths are not allowed.`;
+      return toolError(`Unsafe path "${input.path}". Path traversal (..) and absolute paths are not allowed.`);
     }
     const storyDir = getStoryDir(context);
     const content = await readNovelFile(storyDir, input.path);
-    return content ?? `File not found: ${input.path}`;
+    return content
+      ? toolResult(content)
+      : toolError(`File not found: ${input.path}`);
   },
 });
 
@@ -51,16 +54,16 @@ export const writeFileTool = tool({
   execute: async (input, context) => {
     const storyDir = getStoryDir(context);
     if (!isSafePath(input.path)) {
-      return `Error: Unsafe path "${input.path}". Path traversal (..) and absolute paths are not allowed.`;
+      return toolError(`Unsafe path "${input.path}". Path traversal (..) and absolute paths are not allowed.`);
     }
     if (input.path.startsWith('characters/') && !isValidCharacterFile(input.content)) {
-      return `Error: Invalid character file content. Character files must start with "# Name" heading and have a "> " L0 line.`;
+      return toolError('Invalid character file content. Character files must start with "# Name" heading and have a "> " L0 line.');
     }
     if (input.path.startsWith('scenes/') && !isValidSceneFile(input.content)) {
-      return `Error: Invalid scene file content. Scene files must include sections: ## 地点, ## 时间, ## 在场角色, ## 经过.`;
+      return toolError('Invalid scene file content. Scene files must include sections: ## 地点, ## 时间, ## 在场角色, ## 经过.');
     }
     await writeNovelFile(storyDir, input.path, input.content);
-    return `Successfully wrote to ${input.path}`;
+    return toolResult(`Successfully wrote to ${input.path}`);
   },
 });
 
@@ -75,18 +78,18 @@ export const editFileTool = tool({
   execute: async (input, context) => {
     const storyDir = getStoryDir(context);
     if (!isSafePath(input.path)) {
-      return `Error: Unsafe path "${input.path}". Path traversal (..) and absolute paths are not allowed.`;
+      return toolError(`Unsafe path "${input.path}". Path traversal (..) and absolute paths are not allowed.`);
     }
     const content = await readNovelFile(storyDir, input.path);
     if (content === null) {
-      return `Error: File not found: ${input.path}`;
+      return toolError(`File not found: ${input.path}`);
     }
     if (!content.includes(input.search)) {
-      return `Error: Search string not found in ${input.path}`;
+      return toolError(`Search string not found in ${input.path}`);
     }
     const newContent = content.replace(input.search, input.replace);
     await writeNovelFile(storyDir, input.path, newContent);
-    return `Successfully edited ${input.path}`;
+    return toolResult(`Successfully edited ${input.path}`);
   },
 });
 
@@ -98,13 +101,13 @@ export const globFilesTool = tool({
   }),
   execute: async (input, context) => {
     if (!isSafePath(input.pattern)) {
-      return `Error: Unsafe path "${input.pattern}". Path traversal (..) and absolute paths are not allowed.`;
+      return toolError(`Unsafe path "${input.pattern}". Path traversal (..) and absolute paths are not allowed.`);
     }
     const storyDir = getStoryDir(context);
     const files = await globNovelFiles(storyDir, input.pattern);
     if (files.length === 0) {
-      return `No files found matching pattern "${input.pattern}"`;
+      return toolResult(`No files found matching pattern "${input.pattern}"`);
     }
-    return `Files matching "${input.pattern}":\n${files.map((f) => `  - ${f}`).join('\n')}`;
+    return toolResult(`Files matching "${input.pattern}":\n${files.map((f) => `  - ${f}`).join('\n')}`);
   },
 });

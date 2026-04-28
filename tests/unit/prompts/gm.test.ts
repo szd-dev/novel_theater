@@ -83,13 +83,14 @@ describe("getGMPrompt", () => {
     expect(result).not.toMatch(/checkpointing/);
   });
 
-  test("respects verbosity config", () => {
+  test("accepts verbosity config without error (verbosity tiers unified)", () => {
     const state: GMPromptState = {};
     const normal = getGMPrompt(state, { verbosity: "normal" });
     const detailed = getGMPrompt(state, { verbosity: "detailed" });
     const minimal = getGMPrompt(state, { verbosity: "minimal" });
-    expect(detailed.length).toBeGreaterThan(normal.length);
-    expect(normal.length).toBeGreaterThan(minimal.length);
+    // Verbosity no longer affects output — all tiers produce the same prompt
+    expect(normal).toEqual(detailed);
+    expect(normal).toEqual(minimal);
   });
 });
 

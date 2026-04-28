@@ -16,9 +16,47 @@ const TOOL_META: Record<string, { label: string; color: string }> = {
   call_scribe: { label: "书记", color: "#F59E0B" },
   call_archivist: { label: "场记", color: "#10B981" },
   clear_interaction_log: { label: "清除记录", color: "#8B5CF6" },
+  read_file: { label: "读取文件", color: "#6B7280" },
+  write_file: { label: "写入文件", color: "#6B7280" },
+  glob_files: { label: "查找文件", color: "#6B7280" },
 };
 
 const DEFAULT_META = { label: "工具", color: "#6B7280" };
+
+const AGENT_TOOLS = new Set(["call_actor", "call_scribe", "call_archivist"]);
+
+interface ParsedToolOutput {
+  ok: boolean;
+  data?: string;
+  error?: string;
+}
+
+function parseToolOutput(raw: string | undefined): ParsedToolOutput | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && "ok" in parsed) {
+      return parsed as ParsedToolOutput;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function extractDisplayData(toolName: string, parsed: ParsedToolOutput): string | undefined {
+  if (!parsed.ok || !parsed.data) return undefined;
+  if (!AGENT_TOOLS.has(toolName)) return parsed.data;
+  try {
+    const inner = JSON.parse(parsed.data);
+    if (inner && typeof inner === "object" && "output" in inner) {
+      return String(inner.output);
+    }
+  } catch {
+    return parsed.data;
+  }
+  return parsed.data;
+}
 
 function getToolMeta(toolName: string) {
   return TOOL_META[toolName] ?? DEFAULT_META;
@@ -50,11 +88,19 @@ function ChevronIcon({ expanded }: { expanded: boolean }) {
 export function ToolCallCard({ toolName, state, input, output, error }: ToolCallCardProps) {
   const [expanded, setExpanded] = useState(false);
   const meta = getToolMeta(toolName);
-  const isStreaming = state === "input-streaming";
-  const isRunning = state === "input-available";
-  const isDone = state === "output-available";
-  const isError = state === "output-error";
-  const hasExpandableContent = isDone && !!output;
+
+  const parsed = parseToolOutput(output);
+  const outputIsError = state === "output-available" && parsed !== null && !parsed.ok;
+  const effectiveState = outputIsError ? "output-error" as const : state;
+
+  const isStreaming = effectiveState === "input-streaming";
+  const isRunning = effectiveState === "input-available";
+  const isDone = effectiveState === "output-available";
+  const isError = effectiveState === "output-error";
+
+  const displayData = isDone && parsed ? extractDisplayData(toolName, parsed) : undefined;
+  const errorMessage = isError ? (error ?? parsed?.error) : undefined;
+  const hasExpandableContent = isDone && !!displayData;
 
   const statusText = isStreaming
     ? "思考中..."
@@ -116,14 +162,14 @@ export function ToolCallCard({ toolName, state, input, output, error }: ToolCall
       {hasExpandableContent && expanded && (
         <div className="mt-2 max-h-64 overflow-y-auto rounded-md bg-muted/50 p-2.5">
           <pre className="whitespace-pre-wrap text-xs text-foreground leading-relaxed">
-            {output}
+            {displayData}
           </pre>
         </div>
       )}
 
-      {isError && error && (
+      {isError && errorMessage && (
         <div className="mt-1.5 pl-4 text-xs text-destructive">
-          {error}
+          {errorMessage}
         </div>
       )}
     </div>
