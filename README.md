@@ -124,8 +124,6 @@ bun test tests/integration/  # 仅运行集成测试
 - plan-executor结构的长程剧情演绎
 - 基于演绎脚本的图片-漫画-短视频生成
 
-长期
-
 ## License
 
 [MIT](./LICENSE)
