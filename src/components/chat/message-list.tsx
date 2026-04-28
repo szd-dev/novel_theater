@@ -5,12 +5,7 @@ import type { UIMessage, ChatStatus } from "ai";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageItem } from "@/components/chat/message-item";
 import { ProgressIndicator } from "@/components/chat/progress-indicator";
-
-const TOOL_STEP_MAP: Record<string, number> = {
-  call_actor: 1,
-  call_scribe: 2,
-  call_archivist: 3,
-};
+import { TOOL_STEP_MAP } from "@/components/chat/tool-meta";
 
 function deriveProgress(messages: UIMessage[], status: ChatStatus) {
   if (status !== "streaming" && status !== "submitted") {

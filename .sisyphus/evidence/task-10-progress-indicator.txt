@@ -1,2 +1,0 @@
-7:import { ProgressIndicator } from "@/components/chat/progress-indicator";
-68:              <ProgressIndicator currentStep={currentStep} isThinking={isThinking} />

@@ -1,6 +1,6 @@
 "use client";
 
-import { AGENT_COLORS } from "@/components/chat/agent-label";
+import { AGENT_COLORS } from "@/components/chat/tool-meta";
 import { cn } from "@/lib/utils";
 
 const DEFAULT_COLOR = AGENT_COLORS.actor;

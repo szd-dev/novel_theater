@@ -1,3 +1,0 @@
-Same session: true
-Different char sessions: true
-New session after clear: true

@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactElement } from "react";
 import type { UIMessage } from "ai";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { AgentLabel, type AgentKey } from "@/components/chat/agent-label";
-import { ToolCallCard } from "@/components/chat/tool-call-card";
+import { AgentLabel } from "@/components/chat/agent-label";
+import { ToolTag, type DynamicToolState } from "@/components/chat/tool-tag";
+import { ToolDetailSheet } from "@/components/chat/tool-detail-sheet";
 import { splitBySteps } from "@/components/chat/message-segments";
 import { SessionModal } from "@/components/chat/session-modal";
+import { toolNameToAgentKey } from "@/components/chat/tool-meta";
 
 interface MessageItemProps {
   message: UIMessage;
@@ -19,9 +21,12 @@ function extractAgentLabel(message: UIMessage): string | null {
   for (const part of message.parts) {
     if (part.type === "dynamic-tool") {
       const toolName = (part as { toolName?: string }).toolName;
-      if (toolName === "call_actor") return "Actor";
-      if (toolName === "call_scribe") return "Scribe";
-      if (toolName === "call_archivist") return "Archivist";
+      if (toolName) {
+        const key = toolNameToAgentKey(toolName);
+        if (key !== "gm") {
+          return key.charAt(0).toUpperCase() + key.slice(1);
+        }
+      }
     }
   }
   // Legacy: check data-* parts (backward compat)
@@ -34,88 +39,76 @@ function extractAgentLabel(message: UIMessage): string | null {
   return null;
 }
 
-function getAgentKey(toolName: string): AgentKey {
-  if (toolName === "call_actor") return "actor";
-  if (toolName === "call_scribe") return "scribe";
-  if (toolName === "call_archivist") return "archivist";
-  return "gm";
+interface SeparatedParts {
+  textParts: ReactElement[];
+  toolParts: ReactElement[];
 }
 
-function renderParts(message: UIMessage) {
-  if (!message.parts || message.parts.length === 0) {
-    return null;
-  }
+function separateParts(
+  parts: UIMessage["parts"],
+  onToolClick?: (tool: {
+    toolName: string;
+    input?: Record<string, unknown>;
+    output?: string;
+    error?: string;
+    state?: DynamicToolState;
+  }) => void
+): SeparatedParts {
+  const textParts: ReactElement[] = [];
+  const toolParts: ReactElement[] = [];
 
-  return message.parts.map((part, i) => {
+  parts.forEach((part, i) => {
     if (part.type === "text") {
-      return (
-        <span key={i} className="whitespace-pre-wrap">
-          {part.text}
+      const text = part.text;
+      // Skip empty/whitespace-only text parts to avoid empty bubbles
+      if (!text || !text.trim()) return;
+      textParts.push(
+        <span key={`text-${i}`} className="whitespace-pre-wrap">
+          {text}
         </span>
       );
-    }
-    if (part.type.startsWith("data-")) {
-      return null;
-    }
-    if (part.type === "step-start") {
-      return null;
-    }
-    if (part.type === "dynamic-tool") {
+    } else if (part.type === "dynamic-tool") {
       const dp = part as {
         toolName?: string;
-        state?: "input-streaming" | "input-available" | "output-available" | "output-error";
+        state?: DynamicToolState;
         input?: Record<string, unknown>;
         output?: string;
         error?: string;
+        toolCallId?: string;
       };
-      return (
-        <ToolCallCard
-          key={i}
+      toolParts.push(
+        <ToolTag
+          key={dp.toolCallId ?? `tool-${i}`}
           toolName={dp.toolName ?? ""}
           state={dp.state ?? "input-streaming"}
           input={dp.input}
-          output={dp.output}
-          error={dp.error}
+          onClick={
+            onToolClick
+              ? () =>
+                  onToolClick({
+                    toolName: dp.toolName ?? "",
+                    input: dp.input,
+                    output: dp.output,
+                    error: dp.error,
+                    state: dp.state,
+                  })
+              : () => {}
+          }
         />
       );
     }
-    return null;
+    // data-* and step-start parts are ignored
   });
+
+  return { textParts, toolParts };
 }
 
-function renderSegmentParts(parts: UIMessage["parts"]) {
-  if (!parts || parts.length === 0) return null;
-  return parts.map((part, i) => {
-    if (part.type === "text") {
-      return (
-        <span key={i} className="whitespace-pre-wrap">
-          {part.text}
-        </span>
-      );
-    }
-    if (part.type.startsWith("data-")) return null;
-    if (part.type === "step-start") return null;
-    if (part.type === "dynamic-tool") {
-      const dp = part as {
-        toolName?: string;
-        state?: "input-streaming" | "input-available" | "output-available" | "output-error";
-        input?: Record<string, unknown>;
-        output?: string;
-        error?: string;
-      };
-      return (
-        <ToolCallCard
-          key={i}
-          toolName={dp.toolName ?? ""}
-          state={dp.state ?? "input-streaming"}
-          input={dp.input}
-          output={dp.output}
-          error={dp.error}
-        />
-      );
-    }
-    return null;
-  });
+interface SelectedTool {
+  toolName: string;
+  input?: Record<string, unknown>;
+  output?: string;
+  error?: string;
+  state?: DynamicToolState;
 }
 
 export function MessageItem({ message, threadId }: MessageItemProps) {
@@ -123,9 +116,31 @@ export function MessageItem({ message, threadId }: MessageItemProps) {
   const agentLabel = extractAgentLabel(message);
   const segments = !isUser ? splitBySteps(message) : [];
   const [showSession, setShowSession] = useState(false);
+  const [selectedTool, setSelectedTool] = useState<SelectedTool | null>(null);
   const hasToolCalls = message.parts.some((p) => p.type === "dynamic-tool");
 
+  const handleToolClick = (tool: SelectedTool) => {
+    setSelectedTool(tool);
+  };
+
+  const sheetElement = (
+    <ToolDetailSheet
+      open={!!selectedTool}
+      onOpenChange={(open) => !open && setSelectedTool(null)}
+      toolName={selectedTool?.toolName ?? ""}
+      input={selectedTool?.input}
+      output={selectedTool?.output}
+      error={selectedTool?.error}
+      state={selectedTool?.state}
+    />
+  );
+
   if (isUser || segments.length <= 1) {
+    const { textParts, toolParts } = separateParts(
+      message.parts,
+      !isUser ? handleToolClick : undefined
+    );
+
     return (
       <div
         className={cn(
@@ -149,16 +164,21 @@ export function MessageItem({ message, threadId }: MessageItemProps) {
             </button>
           )}
         </div>
-        <div
-          className={cn(
-            "max-w-[80%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed",
-            isUser
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted text-foreground"
-          )}
-        >
-          {renderParts(message)}
-        </div>
+        {textParts.length > 0 && (
+          <div
+            className={cn(
+              "max-w-[80%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed",
+              isUser
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-foreground"
+            )}
+          >
+            {textParts}
+          </div>
+        )}
+        {toolParts.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">{toolParts}</div>
+        )}
         {threadId && (
           <SessionModal
             threadId={threadId}
@@ -166,6 +186,7 @@ export function MessageItem({ message, threadId }: MessageItemProps) {
             onOpenChange={setShowSession}
           />
         )}
+        {sheetElement}
       </div>
     );
   }
@@ -183,14 +204,25 @@ export function MessageItem({ message, threadId }: MessageItemProps) {
           </button>
         )}
       </div>
-      {segments.map((segment, i) => (
-        <div key={i} className="flex flex-col gap-1">
-          <AgentLabel agent={segment.agent} />
-          <div className="max-w-[80%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed bg-muted text-foreground">
-            {renderSegmentParts(segment.parts)}
+      {segments.map((segment, i) => {
+        const { textParts, toolParts } = separateParts(
+          segment.parts,
+          handleToolClick
+        );
+        return (
+          <div key={i} className="flex flex-col gap-1">
+            <AgentLabel agent={segment.agent} />
+            {textParts.length > 0 && (
+              <div className="max-w-[80%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed bg-muted text-foreground">
+                {textParts}
+              </div>
+            )}
+            {toolParts.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">{toolParts}</div>
+            )}
           </div>
-        </div>
-      ))}
+        );
+      })}
       {threadId && (
         <SessionModal
           threadId={threadId}
@@ -198,6 +230,7 @@ export function MessageItem({ message, threadId }: MessageItemProps) {
           onOpenChange={setShowSession}
         />
       )}
+      {sheetElement}
     </div>
   );
 }

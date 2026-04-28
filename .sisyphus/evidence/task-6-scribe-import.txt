@@ -1,1 +1,0 @@
-Scribe agent: Scribe tools: read_file

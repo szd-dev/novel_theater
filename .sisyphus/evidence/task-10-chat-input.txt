@@ -1,3 +1,0 @@
-21:  const disabled = status === "submitted" || status === "streaming";
-33:          disabled={disabled}
-36:        <Button type="submit" disabled={disabled || !input.trim()} size="default">

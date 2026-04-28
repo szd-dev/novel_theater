@@ -1,8 +1,0 @@
-1:import { run } from '@openai/agents';
-2:import { createAiSdkUiMessageStreamResponse } from '@openai/agents-extensions/ai-sdk-ui';
-6:import { gmAgent } from '@/agents/registry';
-7:import { getStorySession } from '@/session/manager';
-27:    const storySession = getStorySession(threadIdFinal);
-46:    const stream = await run(gmAgent, input, {
-52:    console.log(`[API /narrative] Agent run started in ${Date.now() - streamStart}ms`);
-54:    return createAiSdkUiMessageStreamResponse(stream);

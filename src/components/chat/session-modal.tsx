@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { AgentLabel, type AgentKey } from "@/components/chat/agent-label";
+import { AgentLabel } from "@/components/chat/agent-label";
+import { AGENT_KEY_MAP } from "@/components/chat/tool-meta";
 
 interface ExecutionLogSummary {
   id: string;
@@ -20,13 +21,6 @@ interface SessionModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
-
-const AGENT_KEY_MAP: Record<string, AgentKey> = {
-  Actor: "actor",
-  Scribe: "scribe",
-  Archivist: "archivist",
-  GM: "gm",
-};
 
 export function SessionModal({ threadId, open, onOpenChange }: SessionModalProps) {
   const [logs, setLogs] = useState<ExecutionLogSummary[]>([]);

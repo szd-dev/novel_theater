@@ -1,0 +1,71 @@
+{
+  "active_plan": "/Users/qihoo/codebase/github/novel_theater/.sisyphus/plans/tool-call-ui-redesign.md",
+  "started_at": "2026-04-28T04:50:37.049Z",
+  "session_ids": [
+    "ses_22d933ab8ffeRfGjO3YGxac772",
+    "ses_22d92b826ffeabYL0hVVlMdruB",
+    "ses_22d929cdfffe9Uutvn0Nl48uh6"
+  ],
+  "session_origins": {
+    "ses_22d933ab8ffeRfGjO3YGxac772": "direct",
+    "ses_22d92b826ffeabYL0hVVlMdruB": "appended",
+    "ses_22d929cdfffe9Uutvn0Nl48uh6": "appended"
+  },
+  "plan_name": "tool-call-ui-redesign",
+  "agent": "atlas",
+  "task_sessions": {
+    "todo:1": {
+      "task_key": "todo:1",
+      "task_label": "1",
+      "task_title": "Unified tool-meta constants",
+      "session_id": "ses_22d8dd1bdffeoof9eCykAfUK49",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-04-28T04:59:25.723Z"
+    },
+    "todo:3": {
+      "task_key": "todo:3",
+      "task_label": "3",
+      "task_title": "ToolTag component",
+      "session_id": "ses_22d873280ffedfx2dUX71mQRFN",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-04-28T05:06:28.604Z"
+    },
+    "todo:6": {
+      "task_key": "todo:6",
+      "task_label": "6",
+      "task_title": "MessageItem refactor: separate text/tool rendering",
+      "session_id": "ses_22d836914ffeR0azbqVqH1ykd0",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-04-28T05:09:39.534Z"
+    },
+    "todo:7": {
+      "task_key": "todo:7",
+      "task_label": "7",
+      "task_title": "Wire ToolTag hover + click interactions",
+      "session_id": "ses_22d809f77ffejZVQ9W7bFsLAFs",
+      "agent": "Sisyphus-Junior",
+      "category": "visual-engineering",
+      "updated_at": "2026-04-28T05:13:04.465Z"
+    },
+    "todo:8": {
+      "task_key": "todo:8",
+      "task_label": "8",
+      "task_title": "Remove ToolCallCard + dead code",
+      "session_id": "ses_22d7de627ffebWjqL5Ij9d1jWu",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-04-28T05:14:43.419Z"
+    },
+    "final-wave:f1": {
+      "task_key": "final-wave:f1",
+      "task_label": "F1",
+      "task_title": "**Plan Compliance Audit** — `oracle`",
+      "session_id": "ses_22d7c6a4fffegeXZy0rnp3NJgo",
+      "agent": "oracle",
+      "updated_at": "2026-04-28T05:20:01.456Z"
+    }
+  }
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { AGENT_COLORS, type AgentKey } from "@/components/chat/agent-label";
+import { AGENT_COLORS, type AgentKey } from "@/components/chat/tool-meta";
 import { cn } from "@/lib/utils";
 
 const PIPELINE_STEPS = [

@@ -2,20 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-
-const AGENT_COLORS = {
-  gm: "#8B5CF6",
-  actor: "#EC4899",
-  scribe: "#F59E0B",
-  archivist: "#10B981",
-} as const;
-
-const AGENT_NAMES = {
-  gm: "GM",
-  actor: "演员",
-  scribe: "书记",
-  archivist: "场记",
-} as const;
+import { AGENT_COLORS, AGENT_NAMES } from "@/components/chat/tool-meta";
 
 type AgentKey = keyof typeof AGENT_COLORS;
 
