@@ -112,6 +112,20 @@ bun test tests/integration/  # 仅运行集成测试
 
 测试框架使用 Bun 内置测试（`bun:test`），文件系统测试使用真实临时目录，不使用 mock。
 
+## 未来计划
+
+短期（大概率会做）
+- 完善GM调度中的问题（session复用，固定流程用代码封装，降低调度负担等）
+- UI体验优化
+- 支持手动修改设定以及设定集合的导入导出
+- 优化各个Agent的Prompt
+
+长期（梦想）
+- plan-executor结构的长程剧情演绎
+- 基于演绎脚本的图片-漫画-短视频生成
+
+长期
+
 ## License
 
 [MIT](./LICENSE)
