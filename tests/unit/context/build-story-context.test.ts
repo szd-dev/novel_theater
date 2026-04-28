@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeAll, afterAll } from "bun:test";
-import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { buildStoryContext } from "@/context/build-story-context";
@@ -17,13 +17,9 @@ afterAll(() => {
 
 describe("buildStoryContext", () => {
   test("returns null when .novel/ doesn't exist", async () => {
-    const emptyDir = mkdtempSync(join(tmpdir(), "novel-test-empty-"));
-    try {
-      const result = await buildStoryContext(emptyDir);
-      expect(result).toBeNull();
-    } finally {
-      rmSync(emptyDir, { recursive: true, force: true });
-    }
+    const nonexistentDir = join(tmpdir(), `novel-test-noexist-${Date.now()}`);
+    const result = await buildStoryContext(nonexistentDir);
+    expect(result).toBeNull();
   });
 
   test("returns context with scene info when .novel/ has data", async () => {
@@ -94,6 +90,161 @@ describe("buildStoryContext", () => {
       }
     } finally {
       rmSync(noSceneDir, { recursive: true, force: true });
+    }
+  });
+
+  test("injects character directives at priority -1", async () => {
+    const dDir = mkdtempSync(join(tmpdir(), "novel-test-char-dir-"));
+    try {
+      await initStory(dDir);
+
+      await writeNovelFile(
+        dDir,
+        "characters/林黛玉.md",
+        `# 林黛玉\n> 多愁善感的少女\n\n## 身份\n贾府外孙女\n\n## 当前状态\n忧郁\n`,
+      );
+
+      await writeNovelFile(
+        dDir,
+        "characters/林黛玉.directives.md",
+        "性格坚韧果决",
+      );
+
+      await writeNovelFile(
+        dDir,
+        "scenes/s001.md",
+        `# s001 开场\n\n## 地点\n潇湘馆\n\n## 经过\n黛玉独坐窗前。\n\n## 在场角色\n- 林黛玉\n`,
+      );
+
+      await writeNovelFile(
+        dDir,
+        "world.md",
+        `# 世界设定\n\n## 地点\n\n### 潇湘馆\n幽静的院落。\n`,
+      );
+
+      const result = await buildStoryContext(dDir);
+      expect(result).not.toBeNull();
+      expect(result!).toContain("林黛玉 — 作者指令（不可违反）");
+      expect(result!).toContain("性格坚韧果决");
+
+      const directivesIdx = result!.indexOf("林黛玉 — 作者指令（不可违反）");
+      const sceneCharsIdx = result!.indexOf("## 在场角色");
+      expect(directivesIdx).toBeLessThan(sceneCharsIdx);
+    } finally {
+      rmSync(dDir, { recursive: true, force: true });
+    }
+  });
+
+  test("injects root directives at priority -1", async () => {
+    const dDir = mkdtempSync(join(tmpdir(), "novel-test-root-dir-"));
+    try {
+      await initStory(dDir);
+
+      await writeNovelFile(
+        dDir,
+        "characters/林黛玉.md",
+        `# 林黛玉\n> 多愁善感的少女\n\n## 身份\n贾府外孙女\n`,
+      );
+
+      await writeNovelFile(
+        dDir,
+        "scenes/s001.md",
+        `# s001 开场\n\n## 地点\n潇湘馆\n\n## 经过\n黛玉独坐。\n\n## 在场角色\n- 林黛玉\n`,
+      );
+
+      await writeNovelFile(
+        dDir,
+        "world.md",
+        `# 世界设定\n\n## 地点\n\n### 潇湘馆\n幽静的院落。\n`,
+      );
+
+      await writeNovelFile(
+        dDir,
+        "world.directives.md",
+        "不可修改的世界规则",
+      );
+
+      const result = await buildStoryContext(dDir);
+      expect(result).not.toBeNull();
+      expect(result!).toContain("世界设定 — 作者指令");
+      expect(result!).toContain("不可修改的世界规则");
+    } finally {
+      rmSync(dDir, { recursive: true, force: true });
+    }
+  });
+
+  test("no directives files → unchanged output", async () => {
+    const dDir = mkdtempSync(join(tmpdir(), "novel-test-nodir-"));
+    try {
+      await initStory(dDir);
+
+      await writeNovelFile(
+        dDir,
+        "characters/林黛玉.md",
+        `# 林黛玉\n> 多愁善感的少女\n\n## 身份\n贾府外孙女\n`,
+      );
+
+      await writeNovelFile(
+        dDir,
+        "scenes/s001.md",
+        `# s001 开场\n\n## 地点\n潇湘馆\n\n## 经过\n黛玉独坐。\n\n## 在场角色\n- 林黛玉\n`,
+      );
+
+      await writeNovelFile(
+        dDir,
+        "world.md",
+        `# 世界设定\n\n## 地点\n\n### 潇湘馆\n幽静的院落。\n`,
+      );
+
+      const result = await buildStoryContext(dDir);
+      expect(result).not.toBeNull();
+      expect(result!).not.toContain("作者指令");
+    } finally {
+      rmSync(dDir, { recursive: true, force: true });
+    }
+  });
+
+  test("directives content truncated when exceeding token budget", async () => {
+    const dDir = mkdtempSync(join(tmpdir(), "novel-test-dir-trunc-"));
+    try {
+      await initStory(dDir);
+
+      await writeNovelFile(
+        dDir,
+        "characters/林黛玉.md",
+        `# 林黛玉\n> 多愁善感的少女\n\n## 身份\n贾府外孙女\n`,
+      );
+
+      const longDirectives = Array.from(
+        { length: 100 },
+        (_, i) => `第${i + 1}条指令内容，用于测试截断功能。`,
+      ).join("\n");
+
+      await writeNovelFile(
+        dDir,
+        "characters/林黛玉.directives.md",
+        longDirectives,
+      );
+
+      await writeNovelFile(
+        dDir,
+        "scenes/s001.md",
+        `# s001 开场\n\n## 地点\n潇湘馆\n\n## 经过\n黛玉独坐。\n\n## 在场角色\n- 林黛玉\n`,
+      );
+
+      await writeNovelFile(
+        dDir,
+        "world.md",
+        `# 世界设定\n\n## 地点\n\n### 潇湘馆\n幽静的院落。\n`,
+      );
+
+      const result = await buildStoryContext(dDir, { tokenBudget: 100 });
+      if (result) {
+        expect(result).toContain("林黛玉 — 作者指令（不可违反）");
+        expect(result).not.toContain("第100条指令内容");
+      }
+    } finally {
+      rmSync(dDir, { recursive: true, force: true });
     }
   });
 });

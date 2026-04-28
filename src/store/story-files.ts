@@ -5,6 +5,8 @@ import {
   cpSync,
   rmSync,
   readdirSync,
+  writeFileSync,
+  renameSync,
 } from "node:fs";
 import {
   access,
@@ -12,6 +14,7 @@ import {
   readFile,
 } from "node:fs/promises";
 import { TEMPLATES, SUBDIRS } from "@/lib/templates";
+import { isSafePath, isAllowedFilePath, isDirectivesPath } from "@/lib/validation";
 
 async function pathExists(p: string): Promise<boolean> {
   try {
@@ -186,6 +189,7 @@ export async function readNovelFile(
 /**
  * Write a file to the .novel/ directory.
  * Creates parent directories if they don't exist.
+ * Uses atomic write: writes to a .tmp file first, then renames to target.
  */
 export async function writeNovelFile(
   dir: string,
@@ -198,7 +202,42 @@ export async function writeNovelFile(
     const parentDir = join(dir, ...parts.slice(0, -1));
     mkdirSync(parentDir, { recursive: true });
   }
-  await writeFile(filePath, content, "utf-8");
+  const tmpPath = `${filePath}.tmp`;
+  writeFileSync(tmpPath, content, "utf-8");
+  renameSync(tmpPath, filePath);
+}
+
+/**
+ * Delete a file from the .novel/ directory.
+ * Returns true if the file existed and was deleted, false otherwise.
+ * Rejects unsafe paths, disallowed file paths, and .directives.md files.
+ */
+export async function deleteNovelFile(
+  dir: string,
+  relativePath: string,
+): Promise<boolean> {
+  if (!isSafePath(relativePath)) return false;
+  if (!isAllowedFilePath(relativePath)) return false;
+  if (isDirectivesPath(relativePath)) return false;
+
+  const filePath = join(dir, relativePath);
+  if (!existsSync(filePath)) return false;
+
+  rmSync(filePath);
+  return true;
+}
+
+/**
+ * Read the directives file associated with an entity.
+ * Converts "characters/林黛玉.md" → "characters/林黛玉.directives.md".
+ * Returns null if the directives file doesn't exist.
+ */
+export async function readDirectivesFile(
+  dir: string,
+  entityPath: string,
+): Promise<string | null> {
+  const directivesPath = entityPath.replace(/\.md$/, ".directives.md");
+  return readNovelFile(dir, directivesPath);
 }
 
 /**

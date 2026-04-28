@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { globNovelFiles, readNovelFile } from "@/store/story-files";
+import { globNovelFiles, readNovelFile, readDirectivesFile } from "@/store/story-files";
 import { estimateTokens } from "./token-estimator";
 import {
   extractL0,
@@ -29,6 +29,7 @@ export interface ContextSection {
 const DEFAULT_TOKEN_BUDGET = 2000;
 
 const DEFAULT_PRIORITIES: Record<string, number> = {
+  作者指令: -1,
   在场角色: 0,
   当前场景: 1,
   场景地点: 1,
@@ -124,6 +125,36 @@ export async function buildStoryContext(
     plotSummary = extractSectionLines(plotContent, "主线", 3);
   }
 
+  const directivesSections: ContextSection[] = [];
+
+  for (const charName of resolvedSceneChars) {
+    const directivesContent = await readDirectivesFile(dir, `characters/${charName}.md`);
+    if (directivesContent) {
+      directivesSections.push({
+        label: `${charName} — 作者指令（不可违反）`,
+        content: directivesContent,
+        priority: priorities["作者指令"],
+      });
+    }
+  }
+
+  const rootDirectivePaths = [
+    { path: "world.md", label: "世界设定" },
+    { path: "plot.md", label: "剧情方向" },
+    { path: "timeline.md", label: "时间线" },
+  ];
+
+  for (const { path, label } of rootDirectivePaths) {
+    const directivesContent = await readDirectivesFile(dir, path);
+    if (directivesContent) {
+      directivesSections.push({
+        label: `${label} — 作者指令`,
+        content: directivesContent,
+        priority: priorities["作者指令"],
+      });
+    }
+  }
+
   const sections: ContextSection[] = [];
 
   if (sceneCharL0.length > 0) {
@@ -186,6 +217,8 @@ export async function buildStoryContext(
       priority: priorities["角色详情"],
     });
   }
+
+  sections.push(...directivesSections);
 
   sections.sort((a, b) => a.priority - b.priority);
 

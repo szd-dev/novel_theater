@@ -2,24 +2,9 @@ import { tool } from '@openai/agents';
 import { z } from 'zod';
 import { readNovelFile, writeNovelFile, globNovelFiles } from '@/store/story-files';
 import { toolResult, toolError } from '@/lib/tool-result';
+import { isSafePath, isValidCharacterFile, isValidSceneFile, isDirectivesPath, isAllowedFilePath } from '@/lib/validation';
 
-export function isSafePath(relativePath: string): boolean {
-  if (relativePath.includes('..')) return false;
-  if (relativePath.startsWith('/')) return false;
-  return true;
-}
-
-function isValidCharacterFile(content: string): boolean {
-  const lines = content.split('\n');
-  const hasHeading = lines[0]?.startsWith('# ');
-  const hasL0 = lines.some((l) => l.startsWith('> '));
-  return hasHeading && hasL0;
-}
-
-function isValidSceneFile(content: string): boolean {
-  const required = ['## 地点', '## 时间', '## 在场角色', '## 经过'];
-  return required.every((section) => content.includes(section));
-}
+export { isSafePath } from '@/lib/validation';
 
 function getStoryDir(context: unknown): string {
   const ctx = context as { context?: { storyDir?: string } } | undefined;
@@ -35,6 +20,9 @@ export const readFileTool = tool({
   execute: async (input, context) => {
     if (!isSafePath(input.path)) {
       return toolError(`Unsafe path "${input.path}". Path traversal (..) and absolute paths are not allowed.`);
+    }
+    if (!isAllowedFilePath(input.path)) {
+      return toolError('Disallowed file path. .working/ and .archive/ directories are not accessible.');
     }
     const storyDir = getStoryDir(context);
     const content = await readNovelFile(storyDir, input.path);
@@ -55,6 +43,12 @@ export const writeFileTool = tool({
     const storyDir = getStoryDir(context);
     if (!isSafePath(input.path)) {
       return toolError(`Unsafe path "${input.path}". Path traversal (..) and absolute paths are not allowed.`);
+    }
+    if (!isAllowedFilePath(input.path)) {
+      return toolError('Disallowed file path. .working/ and .archive/ directories are not accessible.');
+    }
+    if (isDirectivesPath(input.path)) {
+      return toolError('作者指令文件仅限手动编辑，AI不可修改。如需调整角色设定，请在作者指令中声明。');
     }
     if (input.path.startsWith('characters/') && !isValidCharacterFile(input.content)) {
       return toolError('Invalid character file content. Character files must start with "# Name" heading and have a "> " L0 line.');
@@ -80,6 +74,12 @@ export const editFileTool = tool({
     if (!isSafePath(input.path)) {
       return toolError(`Unsafe path "${input.path}". Path traversal (..) and absolute paths are not allowed.`);
     }
+    if (!isAllowedFilePath(input.path)) {
+      return toolError('Disallowed file path. .working/ and .archive/ directories are not accessible.');
+    }
+    if (isDirectivesPath(input.path)) {
+      return toolError('作者指令文件仅限手动编辑，AI不可修改。如需调整角色设定，请在作者指令中声明。');
+    }
     const content = await readNovelFile(storyDir, input.path);
     if (content === null) {
       return toolError(`File not found: ${input.path}`);
@@ -88,6 +88,12 @@ export const editFileTool = tool({
       return toolError(`Search string not found in ${input.path}`);
     }
     const newContent = content.replace(input.search, input.replace);
+    if (input.path.startsWith('characters/') && !isValidCharacterFile(newContent)) {
+      return toolError('Invalid character file content after edit. Character files must start with "# Name" heading and have a "> " L0 line.');
+    }
+    if (input.path.startsWith('scenes/') && !isValidSceneFile(newContent)) {
+      return toolError('Invalid scene file content after edit. Scene files must include sections: ## 地点, ## 时间, ## 在场角色, ## 经过.');
+    }
     await writeNovelFile(storyDir, input.path, newContent);
     return toolResult(`Successfully edited ${input.path}`);
   },
@@ -102,6 +108,9 @@ export const globFilesTool = tool({
   execute: async (input, context) => {
     if (!isSafePath(input.pattern)) {
       return toolError(`Unsafe path "${input.pattern}". Path traversal (..) and absolute paths are not allowed.`);
+    }
+    if (!isAllowedFilePath(input.pattern)) {
+      return toolError('Disallowed path pattern. .working/ and .archive/ directories are not accessible.');
     }
     const storyDir = getStoryDir(context);
     const files = await globNovelFiles(storyDir, input.pattern);

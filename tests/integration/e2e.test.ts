@@ -38,7 +38,7 @@ describe("自由剧场 v2 Agent Architecture", () => {
     test("Archivist agent has correct tools", () => {
       expect(archivistAgent.name).toBe("Archivist");
       const toolNames = archivistAgent.tools.map((t: any) => t.name).sort();
-      expect(toolNames).toEqual(["edit_file", "glob_files", "read_file", "resolve_character", "write_file"]);
+      expect(toolNames).toEqual(["edit_file", "glob_files", "list_characters", "read_file", "resolve_character", "write_file"]);
     });
   });
 
@@ -90,27 +90,27 @@ describe("自由剧场 v2 Agent Architecture", () => {
     test("initStory() creates .novel/ directory with templates", async () => {
       const result = await initStory(storyDir);
       expect(result).toContain("Story initialized");
-      expect(existsSync(join(storyDir, ".novel"))).toBe(true);
-      expect(existsSync(join(storyDir, ".novel", "world.md"))).toBe(true);
-      expect(existsSync(join(storyDir, ".novel", "style.md"))).toBe(true);
-      expect(existsSync(join(storyDir, ".novel", "plot.md"))).toBe(true);
-      expect(existsSync(join(storyDir, ".novel", "characters"))).toBe(true);
-      expect(existsSync(join(storyDir, ".novel", "scenes"))).toBe(true);
+      expect(existsSync(storyDir)).toBe(true);
+      expect(existsSync(join(storyDir, "world.md"))).toBe(true);
+      expect(existsSync(join(storyDir, "style.md"))).toBe(true);
+      expect(existsSync(join(storyDir, "plot.md"))).toBe(true);
+      expect(existsSync(join(storyDir, "characters"))).toBe(true);
+      expect(existsSync(join(storyDir, "scenes"))).toBe(true);
     });
 
     test("archiveStory() copies .novel/ to .archive/", async () => {
       const result = await archiveStory(storyDir, "test-archive");
       expect(result).toContain("test-archive");
-      expect(existsSync(join(storyDir, ".archive", "test-archive"))).toBe(true);
-      expect(existsSync(join(storyDir, ".archive", "test-archive", "world.md"))).toBe(true);
+      expect(existsSync(join(storyDir, "..", ".archive", "test-archive"))).toBe(true);
+      expect(existsSync(join(storyDir, "..", ".archive", "test-archive", "world.md"))).toBe(true);
     });
 
     test("resetStory() backs up and resets .novel/", async () => {
       const result = await resetStory(storyDir);
       expect(result).toContain("故事已重置");
-      expect(existsSync(join(storyDir, ".novel"))).toBe(true);
-      expect(existsSync(join(storyDir, ".novel", "world.md"))).toBe(true);
-      expect(existsSync(join(storyDir, ".archive"))).toBe(true);
+      expect(existsSync(storyDir)).toBe(true);
+      expect(existsSync(join(storyDir, "world.md"))).toBe(true);
+      expect(existsSync(join(storyDir, "..", ".archive"))).toBe(true);
     });
   });
 });

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { UIMessage, ChatStatus } from "ai";
+import type { DynamicToolState } from "@/components/chat/tool-detail-sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageItem } from "@/components/chat/message-item";
 import { ProgressIndicator } from "@/components/chat/progress-indicator";
@@ -29,9 +30,10 @@ interface MessageListProps {
   messages: UIMessage[];
   status: ChatStatus;
   threadId?: string;
+  onToolClick?: (tool: { toolName: string; input?: Record<string, unknown>; output?: string; error?: string; state?: DynamicToolState }) => void;
 }
 
-export function MessageList({ messages, status, threadId }: MessageListProps) {
+export function MessageList({ messages, status, threadId, onToolClick }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const { currentStep, isThinking } = deriveProgress(messages, status);
 
@@ -54,7 +56,7 @@ export function MessageList({ messages, status, threadId }: MessageListProps) {
         )}
         <div className="flex flex-col gap-4">
           {messages.map((message) => (
-            <MessageItem key={message.id} message={message} threadId={threadId} />
+            <MessageItem key={message.id} message={message} threadId={threadId} onToolClick={onToolClick} />
           ))}
           {(status === "submitted" || status === "streaming") && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">

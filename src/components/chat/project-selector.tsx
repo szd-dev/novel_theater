@@ -98,7 +98,7 @@ export function ProjectSelector({
 
   if (variant === "sidebar") {
     return (
-      <div className="flex h-full flex-col">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <div className="flex items-center justify-between px-3 py-2">
           <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             项目
@@ -135,7 +135,7 @@ export function ProjectSelector({
           </div>
         )}
 
-        <ScrollArea className="flex-1">
+        <ScrollArea className="min-h-0 flex-1 overflow-hidden">
           <div className="space-y-0.5 px-1">
             {projects.map((project) => (
               <div

@@ -1,71 +1,67 @@
 {
-  "active_plan": "/Users/qihoo/codebase/github/novel_theater/.sisyphus/plans/tool-call-ui-redesign.md",
-  "started_at": "2026-04-28T04:50:37.049Z",
+  "active_plan": "/Users/qihoo/codebase/github/novel_theater/.sisyphus/plans/file-editing.md",
+  "started_at": "2026-04-28T09:51:50.419Z",
   "session_ids": [
-    "ses_22d933ab8ffeRfGjO3YGxac772",
-    "ses_22d92b826ffeabYL0hVVlMdruB",
-    "ses_22d929cdfffe9Uutvn0Nl48uh6"
+    "ses_22c7f73a0ffeKU7XxV8AEdG0yB",
+    "ses_22c552292ffezm7RA4JM7ZXTXZ",
+    "ses_22c54e631ffeKYI1wfc8PaESYW",
+    "ses_22c54b05bffe2R5PNqO6RbJlNn",
+    "ses_22c547997ffeJ0Y908CXop5BU9"
   ],
   "session_origins": {
-    "ses_22d933ab8ffeRfGjO3YGxac772": "direct",
-    "ses_22d92b826ffeabYL0hVVlMdruB": "appended",
-    "ses_22d929cdfffe9Uutvn0Nl48uh6": "appended"
+    "ses_22c7f73a0ffeKU7XxV8AEdG0yB": "direct",
+    "ses_22c552292ffezm7RA4JM7ZXTXZ": "appended",
+    "ses_22c54e631ffeKYI1wfc8PaESYW": "appended",
+    "ses_22c54b05bffe2R5PNqO6RbJlNn": "appended",
+    "ses_22c547997ffeJ0Y908CXop5BU9": "appended"
   },
-  "plan_name": "tool-call-ui-redesign",
+  "plan_name": "file-editing",
   "agent": "atlas",
   "task_sessions": {
     "todo:1": {
       "task_key": "todo:1",
       "task_label": "1",
-      "task_title": "Unified tool-meta constants",
-      "session_id": "ses_22d8dd1bdffeoof9eCykAfUK49",
+      "task_title": "Extract shared validation module",
+      "session_id": "ses_22c7cba26ffe9TeklbzOfFXa02",
       "agent": "Sisyphus-Junior",
       "category": "quick",
-      "updated_at": "2026-04-28T04:59:25.723Z"
+      "updated_at": "2026-04-28T10:03:55.425Z"
     },
     "todo:3": {
       "task_key": "todo:3",
       "task_label": "3",
-      "task_title": "ToolTag component",
-      "session_id": "ses_22d873280ffedfx2dUX71mQRFN",
+      "task_title": "File CRUD API endpoints",
+      "session_id": "ses_22c6f9b37ffe7PsHQVQRJsjOj6",
       "agent": "Sisyphus-Junior",
       "category": "unspecified-high",
-      "updated_at": "2026-04-28T05:06:28.604Z"
+      "updated_at": "2026-04-28T10:12:12.891Z"
     },
     "todo:6": {
       "task_key": "todo:6",
       "task_label": "6",
-      "task_title": "MessageItem refactor: separate text/tool rendering",
-      "session_id": "ses_22d836914ffeR0azbqVqH1ykd0",
-      "agent": "Sisyphus-Junior",
-      "category": "deep",
-      "updated_at": "2026-04-28T05:09:39.534Z"
-    },
-    "todo:7": {
-      "task_key": "todo:7",
-      "task_label": "7",
-      "task_title": "Wire ToolTag hover + click interactions",
-      "session_id": "ses_22d809f77ffejZVQ9W7bFsLAFs",
-      "agent": "Sisyphus-Junior",
-      "category": "visual-engineering",
-      "updated_at": "2026-04-28T05:13:04.465Z"
-    },
-    "todo:8": {
-      "task_key": "todo:8",
-      "task_label": "8",
-      "task_title": "Remove ToolCallCard + dead code",
-      "session_id": "ses_22d7de627ffebWjqL5Ij9d1jWu",
+      "task_title": "StoryFileTree sidebar component",
+      "session_id": "ses_22c60b5c0ffeiF274B2jzV361h",
       "agent": "Sisyphus-Junior",
       "category": "quick",
-      "updated_at": "2026-04-28T05:14:43.419Z"
+      "updated_at": "2026-04-28T10:25:44.368Z"
+    },
+    "todo:9": {
+      "task_key": "todo:9",
+      "task_label": "9",
+      "task_title": "Directives UI — creation, editing, and badge in file tree",
+      "session_id": "ses_22c5e9c23ffe6NcpK3PL69jYj3",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-04-28T10:36:40.643Z"
     },
     "final-wave:f1": {
       "task_key": "final-wave:f1",
       "task_label": "F1",
       "task_title": "**Plan Compliance Audit** — `oracle`",
-      "session_id": "ses_22d7c6a4fffegeXZy0rnp3NJgo",
-      "agent": "oracle",
-      "updated_at": "2026-04-28T05:20:01.456Z"
+      "session_id": "ses_22c547997ffeJ0Y908CXop5BU9",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-04-28T10:45:31.960Z"
     }
   }
 }

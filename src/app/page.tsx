@@ -4,10 +4,23 @@ import { useState, useCallback, useEffect, useMemo, type FormEvent } from "react
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { ProjectSelector } from "@/components/chat/project-selector";
+import { StoryFileTree } from "@/components/chat/story-file-tree";
 import { MessageList } from "@/components/chat/message-list";
 import { ChatInput } from "@/components/chat/chat-input";
 import { SceneIndicator } from "@/components/chat/scene-indicator";
 import { Separator } from "@/components/ui/separator";
+import {
+  Sheet,
+  SheetContent as SheetContentUI,
+} from "@/components/ui/sheet";
+import { ToolDetailContent, type DynamicToolState } from "@/components/chat/tool-detail-sheet";
+import { FileEditorSheet } from "@/components/chat/file-editor-sheet";
+import { cn } from "@/lib/utils";
+
+type SheetContent =
+  | { kind: "tool-detail"; toolName: string; input?: Record<string, unknown>; output?: string; error?: string; state?: DynamicToolState }
+  | { kind: "file-editor"; filePath: string; projectId: string }
+  | null;
 
 interface ProjectChatProps {
   projectId: string;
@@ -16,6 +29,14 @@ interface ProjectChatProps {
 
 function ProjectChat({ projectId, onProjectSelect }: ProjectChatProps) {
   const [input, setInput] = useState("");
+  const [sheetContent, setSheetContent] = useState<SheetContent>(null);
+
+  const handleToolClick = useCallback(
+    (tool: { toolName: string; input?: Record<string, unknown>; output?: string; error?: string; state?: DynamicToolState }) => {
+      setSheetContent({ kind: "tool-detail", ...tool });
+    },
+    [],
+  );
 
   const transport = useMemo(
     () =>
@@ -97,17 +118,23 @@ function ProjectChat({ projectId, onProjectSelect }: ProjectChatProps) {
       </header>
       <Separator />
       <div className="flex min-h-0 flex-1 flex-row">
-        <aside className="flex w-56 shrink-0 flex-col border-r border-border">
+        <aside className="flex min-h-0 w-56 shrink-0 flex-col gap-2 overflow-hidden border-r border-border py-2">
           <ProjectSelector
             currentProjectId={projectId}
             onProjectSelect={onProjectSelect}
             onProjectDelete={handleProjectDelete}
             variant="sidebar"
           />
+          <Separator />
+          <StoryFileTree
+            projectId={projectId}
+            selectedFilePath={sheetContent?.kind === "file-editor" ? sheetContent.filePath : null}
+            onFileSelect={(path) => setSheetContent({ kind: "file-editor", filePath: path, projectId })}
+          />
         </aside>
         <main className="flex min-h-0 flex-1 flex-col">
           <SceneIndicator threadId={projectId} />
-          <MessageList messages={messages} status={status} threadId={projectId} />
+          <MessageList messages={messages} status={status} threadId={projectId} onToolClick={handleToolClick} />
           <ChatInput
             input={input}
             onInputChange={setInput}
@@ -117,6 +144,32 @@ function ProjectChat({ projectId, onProjectSelect }: ProjectChatProps) {
           />
         </main>
       </div>
+      <Sheet open={sheetContent !== null} onOpenChange={(open) => !open && setSheetContent(null)}>
+        <SheetContentUI
+          side="right"
+          className={cn(
+            sheetContent?.kind === "file-editor"
+              ? "!w-[800px] sm:!max-w-[800px]"
+              : "w-[400px] sm:max-w-[400px]",
+          )}
+        >
+          {sheetContent?.kind === "tool-detail" && (
+            <ToolDetailContent
+              toolName={sheetContent.toolName}
+              input={sheetContent.input}
+              output={sheetContent.output}
+              error={sheetContent.error}
+              state={sheetContent.state}
+            />
+          )}
+          {sheetContent?.kind === "file-editor" && (
+            <FileEditorSheet
+              projectId={sheetContent.projectId}
+              filePath={sheetContent.filePath}
+            />
+          )}
+        </SheetContentUI>
+      </Sheet>
     </div>
   );
 }

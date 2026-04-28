@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { AgentLabel } from "@/components/chat/agent-label";
 import { ToolTag, type DynamicToolState } from "@/components/chat/tool-tag";
-import { ToolDetailSheet } from "@/components/chat/tool-detail-sheet";
 import { splitBySteps } from "@/components/chat/message-segments";
 import { SessionModal } from "@/components/chat/session-modal";
 import { toolNameToAgentKey } from "@/components/chat/tool-meta";
@@ -14,6 +13,7 @@ import { toolNameToAgentKey } from "@/components/chat/tool-meta";
 interface MessageItemProps {
   message: UIMessage;
   threadId?: string;
+  onToolClick?: (tool: { toolName: string; input?: Record<string, unknown>; output?: string; error?: string; state?: DynamicToolState }) => void;
 }
 
 function extractAgentLabel(message: UIMessage): string | null {
@@ -103,42 +103,17 @@ function separateParts(
   return { textParts, toolParts };
 }
 
-interface SelectedTool {
-  toolName: string;
-  input?: Record<string, unknown>;
-  output?: string;
-  error?: string;
-  state?: DynamicToolState;
-}
-
-export function MessageItem({ message, threadId }: MessageItemProps) {
+export function MessageItem({ message, threadId, onToolClick }: MessageItemProps) {
   const isUser = message.role === "user";
   const agentLabel = extractAgentLabel(message);
   const segments = !isUser ? splitBySteps(message) : [];
   const [showSession, setShowSession] = useState(false);
-  const [selectedTool, setSelectedTool] = useState<SelectedTool | null>(null);
   const hasToolCalls = message.parts.some((p) => p.type === "dynamic-tool");
-
-  const handleToolClick = (tool: SelectedTool) => {
-    setSelectedTool(tool);
-  };
-
-  const sheetElement = (
-    <ToolDetailSheet
-      open={!!selectedTool}
-      onOpenChange={(open) => !open && setSelectedTool(null)}
-      toolName={selectedTool?.toolName ?? ""}
-      input={selectedTool?.input}
-      output={selectedTool?.output}
-      error={selectedTool?.error}
-      state={selectedTool?.state}
-    />
-  );
 
   if (isUser || segments.length <= 1) {
     const { textParts, toolParts } = separateParts(
       message.parts,
-      !isUser ? handleToolClick : undefined
+      !isUser ? onToolClick : undefined
     );
 
     return (
@@ -186,7 +161,6 @@ export function MessageItem({ message, threadId }: MessageItemProps) {
             onOpenChange={setShowSession}
           />
         )}
-        {sheetElement}
       </div>
     );
   }
@@ -207,7 +181,7 @@ export function MessageItem({ message, threadId }: MessageItemProps) {
       {segments.map((segment, i) => {
         const { textParts, toolParts } = separateParts(
           segment.parts,
-          handleToolClick
+          onToolClick
         );
         return (
           <div key={i} className="flex flex-col gap-1">
@@ -230,7 +204,6 @@ export function MessageItem({ message, threadId }: MessageItemProps) {
           onOpenChange={setShowSession}
         />
       )}
-      {sheetElement}
     </div>
   );
 }
