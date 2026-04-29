@@ -33,11 +33,12 @@ export const AGENT_KEY_MAP: Record<string, AgentKey> = {
 
 export const TOOL_STEP_MAP: Record<string, number> = {
   call_actor: 1,
+  enact_sequence: 1,
   call_scribe: 2,
   call_archivist: 3,
 };
 
-export const AGENT_TOOLS = new Set(["call_actor", "call_scribe", "call_archivist"]);
+export const AGENT_TOOLS = new Set(["call_actor", "call_scribe", "call_archivist", "enact_sequence"]);
 
 export const TOOL_META_MAP: Record<string, ToolMeta> = {
   call_actor: {
@@ -136,6 +137,15 @@ export const TOOL_META_MAP: Record<string, ToolMeta> = {
     icon: "⚠️",
     category: "system",
   },
+  enact_sequence: {
+    toolName: "enact_sequence",
+    agentKey: "actor",
+    label: "序列演绎",
+    color: "#EC4899",
+    icon: "🎬",
+    headlineParam: "schedule",
+    category: "agent",
+  },
 };
 
 const DEFAULT_META: ToolMeta = {
@@ -156,6 +166,16 @@ export function getHeadlineValue(toolName: string, input: Record<string, unknown
   if (!meta?.headlineParam) return "";
   const value = input[meta.headlineParam];
   if (value === undefined || value === null) return "";
+
+  // Special handling for schedule array: extract character names
+  if (meta.headlineParam === "schedule" && Array.isArray(value)) {
+    const names = value
+      .map((s: { character?: string }) => s.character ?? "")
+      .filter(Boolean);
+    const joined = names.join("→");
+    return joined.length > 30 ? joined.slice(0, 30) + "…" : joined;
+  }
+
   const str = String(value);
   return str.length > 30 ? str.slice(0, 30) + "…" : str;
 }

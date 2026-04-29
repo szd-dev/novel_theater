@@ -69,6 +69,10 @@ export function formatToolOutput(toolName: string, rawOutput: string): Formatted
 }
 
 function formatAgentOutput(toolName: string, parsed: ParsedToolOutput): FormattedOutput {
+  if (toolName === "enact_sequence") {
+    return formatEnactSequenceOutput(parsed);
+  }
+
   const displayData = extractDisplayData(toolName, parsed);
   const metadata: Record<string, string> = {};
 
@@ -131,6 +135,31 @@ function formatCharacterOutput(toolName: string, parsed: ParsedToolOutput): Form
   }
 
   return { kind: "text", content: parsed.data ?? "" };
+}
+
+function formatEnactSequenceOutput(parsed: ParsedToolOutput): FormattedOutput {
+  const metadata: Record<string, string> = {};
+  let steps: Array<{ character: string; status: string; error?: string }> = [];
+
+  try {
+    const inner = JSON.parse(parsed.data ?? "");
+    steps = inner.steps ?? [];
+    if (inner.message) metadata["摘要"] = inner.message;
+  } catch {}
+
+  const content = steps
+    .map((s, i) => {
+      const icon = s.status === "success" ? "✅" : "❌";
+      const err = s.error ? ` — ${s.error}` : "";
+      return `${i + 1}. ${icon} ${s.character}${err}`;
+    })
+    .join("\n");
+
+  return {
+    kind: "agent-result",
+    content,
+    metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
+  };
 }
 
 function formatSystemOutput(_toolName: string, parsed: ParsedToolOutput): FormattedOutput {
