@@ -1,49 +1,56 @@
 {
-  "active_plan": "/data/novel_theater/.sisyphus/plans/gm-stage-refactor.md",
-  "started_at": "2026-04-28T16:41:20.034Z",
+  "active_plan": "/data/novel_theater/.sisyphus/plans/lexical-chat-input.md",
+  "started_at": "2026-04-29T15:05:36.274Z",
   "session_ids": [
-    "ses_22b088c82ffeOhgioblUpCP55m"
+    "ses_22639d510ffe259MbjXtALdwxK",
+    "ses_2261e4e0bffexJp2g8l7ulPSd8",
+    "ses_2261e4e01ffefgEkCKZh8U3ck1",
+    "ses_2261e4cccffeuJbInF3FSN8AI9"
   ],
   "session_origins": {
-    "ses_22b088c82ffeOhgioblUpCP55m": "direct"
+    "ses_22639d510ffe259MbjXtALdwxK": "direct",
+    "ses_2261e4e0bffexJp2g8l7ulPSd8": "appended",
+    "ses_2261e4e01ffefgEkCKZh8U3ck1": "appended",
+    "ses_2261e4cccffeuJbInF3FSN8AI9": "appended"
   },
-  "plan_name": "gm-stage-refactor",
+  "plan_name": "lexical-chat-input",
   "agent": "atlas",
   "task_sessions": {
     "todo:1": {
       "task_key": "todo:1",
       "task_label": "1",
-      "task_title": "validation.ts — 添加 ## 初始剧本 必填验证",
-      "session_id": "ses_22b061fc6ffehd2gVBsFdusCGx",
+      "task_title": "安装 Lexical + beautiful-mentions 依赖",
+      "session_id": "ses_226383880ffefGMlJwVP8fzqkd",
       "agent": "Sisyphus-Junior",
       "category": "quick",
-      "updated_at": "2026-04-28T16:44:24.304Z"
+      "updated_at": "2026-04-29T15:09:10.824Z"
     },
-    "todo:4": {
-      "task_key": "todo:4",
-      "task_label": "4",
-      "task_title": "archivist.ts prompt — 场景模板添加 ## 初始剧本",
-      "session_id": "ses_22afee542ffetStJciOuNdHEgd",
+    "todo:3": {
+      "task_key": "todo:3",
+      "task_label": "3",
+      "task_title": "Lexical 编辑器核心组件",
+      "session_id": "ses_2262cd33dffe7D3XZFCWt4ezVI",
       "agent": "Sisyphus-Junior",
-      "category": "quick",
-      "updated_at": "2026-04-28T16:52:19.102Z"
+      "category": "deep",
+      "updated_at": "2026-04-29T15:28:05.079Z"
     },
-    "todo:7": {
-      "task_key": "todo:7",
-      "task_label": "7",
-      "task_title": "registry.ts — Actor maxTurns 25→10",
-      "session_id": "ses_22af59d1bffeGAv9GyUXMl3X9C",
+    "todo:5": {
+      "task_key": "todo:5",
+      "task_label": "5",
+      "task_title": "page.tsx 集成 + SSR 处理",
+      "session_id": "ses_22622ebb5ffeU3E1JNkqGgJR7k",
       "agent": "Sisyphus-Junior",
-      "category": "quick",
-      "updated_at": "2026-04-28T17:02:23.289Z"
+      "category": "unspecified-high",
+      "updated_at": "2026-04-29T15:33:23.987Z"
     },
     "final-wave:f1": {
       "task_key": "final-wave:f1",
       "task_label": "F1",
       "task_title": "**Plan Compliance Audit** — `oracle`",
-      "session_id": "ses_22aed98f6ffeqo4pss6oI9367c",
-      "agent": "oracle",
-      "updated_at": "2026-04-28T17:12:30.204Z"
+      "session_id": "ses_2261e4cccffeuJbInF3FSN8AI9",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-04-29T15:58:03.988Z"
     }
   }
 }

@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo, useRef, type FormEvent } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { ProjectSelector } from "@/components/chat/project-selector";
 import { StoryFileTree, type StoryFileTreeRef } from "@/components/chat/story-file-tree";
 import { MessageList } from "@/components/chat/message-list";
 import { ChatInput } from "@/components/chat/chat-input";
+import type { MentionData } from "@/components/chat/chat-input/utils";
 import { SceneIndicator } from "@/components/chat/scene-indicator";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -28,7 +29,6 @@ interface ProjectChatProps {
 }
 
 function ProjectChat({ projectId, onProjectSelect }: ProjectChatProps) {
-  const [input, setInput] = useState("");
   const [sheetContent, setSheetContent] = useState<SheetContent>(null);
   const fileTreeRef = useRef<StoryFileTreeRef>(null);
 
@@ -48,7 +48,7 @@ function ProjectChat({ projectId, onProjectSelect }: ProjectChatProps) {
     [projectId],
   );
 
-  const { messages, status, sendMessage, stop, setMessages } = useChat({
+  const { messages, status, sendMessage, stop, setMessages, error, clearError } = useChat({
     transport,
     id: projectId,
     onFinish: ({ messages: currentMessages }) => {
@@ -57,8 +57,11 @@ function ProjectChat({ projectId, onProjectSelect }: ProjectChatProps) {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ projectId, messages: currentMessages }),
-      }).catch(() => { /* best-effort save */ });
+      }).catch((err) => { console.error("[Chat] Failed to persist messages:", err); });
       fileTreeRef.current?.refresh();
+    },
+    onError: (err) => {
+      console.error("[Chat] Stream error:", err);
     },
   });
 
@@ -68,7 +71,7 @@ function ProjectChat({ projectId, onProjectSelect }: ProjectChatProps) {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ projectId, messages: msgs }),
-    }).catch(() => { /* best-effort save */ });
+    }).catch((err) => { console.error("[Chat] Failed to persist messages:", err); });
   }, [projectId]);
 
   const handleStop = useCallback(() => {
@@ -86,21 +89,19 @@ function ProjectChat({ projectId, onProjectSelect }: ProjectChatProps) {
       .then((data) => {
         if (!cancelled) setMessages(data.messages ?? []);
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error("[Chat] Failed to load history:", err);
         if (!cancelled) setMessages([]);
       });
     return () => { cancelled = true; };
   }, [projectId, setMessages]);
 
-  const handleSubmit = useCallback(
-    (e: FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      const text = input.trim();
-      if (!text) return;
+  const handleSend = useCallback(
+    (text: string, _mentions: MentionData[]) => {
+      if (!text.trim()) return;
       sendMessage({ text });
-      setInput("");
     },
-    [input, sendMessage],
+    [sendMessage],
   );
 
   const handleProjectDelete = useCallback(
@@ -137,11 +138,10 @@ function ProjectChat({ projectId, onProjectSelect }: ProjectChatProps) {
         </aside>
         <main className="flex min-h-0 flex-1 flex-col">
           <SceneIndicator threadId={projectId} />
-          <MessageList messages={messages} status={status} threadId={projectId} onToolClick={handleToolClick} />
+          <MessageList messages={messages} status={status} threadId={projectId} onToolClick={handleToolClick} error={error} onClearError={clearError} />
           <ChatInput
-            input={input}
-            onInputChange={setInput}
-            onSubmit={handleSubmit}
+            projectId={projectId}
+            onSend={handleSend}
             status={status}
             onStop={handleStop}
           />

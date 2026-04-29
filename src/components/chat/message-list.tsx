@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageItem } from "@/components/chat/message-item";
 import { ProgressIndicator } from "@/components/chat/progress-indicator";
 import { TOOL_STEP_MAP } from "@/components/chat/tool-meta";
+import { Button } from "@/components/ui/button";
 
 function deriveProgress(messages: UIMessage[], status: ChatStatus) {
   if (status !== "streaming" && status !== "submitted") {
@@ -31,9 +32,11 @@ interface MessageListProps {
   status: ChatStatus;
   threadId?: string;
   onToolClick?: (tool: { toolName: string; input?: Record<string, unknown>; output?: string; error?: string; state?: DynamicToolState }) => void;
+  error?: Error;
+  onClearError?: () => void;
 }
 
-export function MessageList({ messages, status, threadId, onToolClick }: MessageListProps) {
+export function MessageList({ messages, status, threadId, onToolClick, error, onClearError }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const { currentStep, isThinking } = deriveProgress(messages, status);
 
@@ -61,6 +64,20 @@ export function MessageList({ messages, status, threadId, onToolClick }: Message
           {(status === "submitted" || status === "streaming") && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <ProgressIndicator currentStep={currentStep} isThinking={isThinking} />
+            </div>
+          )}
+          {error && (
+            <div className="flex items-start gap-3 rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
+              <span className="mt-0.5 shrink-0">⚠</span>
+              <div className="flex-1">
+                <p className="font-medium">请求失败</p>
+                <p className="mt-0.5 text-destructive/80">{error.message}</p>
+              </div>
+              {onClearError && (
+                <Button variant="ghost" size="xs" onClick={onClearError} className="shrink-0">
+                  关闭
+                </Button>
+              )}
             </div>
           )}
         </div>
