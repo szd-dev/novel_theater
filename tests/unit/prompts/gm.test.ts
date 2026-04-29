@@ -91,7 +91,7 @@ describe("getGMPrompt", () => {
     const result = getGMPrompt(state);
     expect(result).toContain("准备（Orient）");
     expect(result).toContain("场景编写（Script）");
-    expect(result).toContain("演绎循环（Enact）");
+    expect(result).toContain("演绎调度（Enact）");
     expect(result).toContain("收束（Resolve）");
   });
 

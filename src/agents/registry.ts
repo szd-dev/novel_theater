@@ -53,11 +53,74 @@ function buildExecutionLog(
   };
 }
 
+const enactSequenceTool = tool({
+  name: 'enact_sequence',
+  description: '规划并执行完整的角色出场序列。按给定顺序依次调用 Actor，自动管理角色会话和交互记录。调用前自动清除旧交互记录。',
+  parameters: z.object({
+    schedule: z.array(z.object({
+      character: z.string().describe('角色名称'),
+      direction: z.string().describe('场景指示——告诉 Actor 角色应该做什么、面对什么情境'),
+    })).min(1).max(10).describe('角色出场序列，按顺序执行'),
+  }),
+  execute: async (input) => {
+    if (!currentProjectDir) return toolError('No active project');
+    const storyDir = join(currentProjectDir, '.novel');
+
+    // Auto-clear stale interaction log before starting
+    clearInteractionLog(storyDir);
+
+    const sessionCache = new Map<string, { session: Session; sessionId: string }>();
+    const steps: Array<{ character: string; sessionId: string; status: string; error?: string }> = [];
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const step of input.schedule) {
+      try {
+        let sessionEntry = sessionCache.get(step.character);
+        if (!sessionEntry) {
+          const created = createSubSession(currentProjectId!, currentProjectDir!, 'Actor', step.character);
+          sessionEntry = { session: created.session, sessionId: created.sessionId };
+          sessionCache.set(step.character, sessionEntry);
+        }
+
+        const result = await run(actorAgent, `${step.character}: ${step.direction}`, {
+          context: { storyDir, characterName: step.character },
+          session: sessionEntry.session,
+          maxTurns: 10,
+          callModelInputFilter: createPromptLogFilter(storyDir),
+        });
+
+        // Auto-append interaction log (best-effort)
+        try {
+          appendInteractionLog(storyDir, step.character, String(result.finalOutput ?? ''));
+        } catch {
+          // Best-effort: don't block sequence on interaction log write failure
+        }
+
+        const log = buildExecutionLog('Actor', `${step.character}: ${step.direction}`, result);
+        if (log && currentProjectId) addExecutionLog(currentProjectId, log);
+
+        steps.push({ character: step.character, sessionId: sessionEntry.sessionId, status: 'success' });
+        successCount++;
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        steps.push({ character: step.character, sessionId: '', status: 'error', error: errorMsg });
+        errorCount++;
+      }
+    }
+
+    return toolResult(JSON.stringify({
+      steps,
+      message: `${input.schedule.length} 步完成（${successCount} 成功，${errorCount} 失败），交互记录已更新`,
+    }));
+  },
+});
+
 const callActorTool = tool({
   name: 'call_actor',
-  description: '调用演员进行角色表演。传入角色名和场景指示，Actor 会以角色视角输出行为、对话和内心独白。',
+  description: '备用工具——单次角色表演。仅在 enact_sequence 不适用的边缘场景使用。',
   parameters: z.object({
-    character: z.string().describe('角色名称（如"塞莉娅"、"希尔薇"）'),
+    character: z.string().describe('角色名称'),
     direction: z.string().describe('场景指示，告诉 Actor 角色应该做什么、面对什么情境'),
     sessionId: z.string().optional().describe('已有的 sub-session ID，传入则复用，不传则新建'),
   }),
@@ -205,7 +268,7 @@ const clearInteractionLogTool = tool({
 });
 
 // Set GM's tools
-gmAgent.tools = [callActorTool, callScribeTool, callArchivistTool, clearInteractionLogTool, readFileTool, writeFileTool, globFilesTool];
+gmAgent.tools = [enactSequenceTool, callActorTool, callScribeTool, callArchivistTool, clearInteractionLogTool, readFileTool, writeFileTool, globFilesTool];
 
 // Re-export for convenience
 export { gmAgent, actorAgent, scribeAgent, archivistAgent };

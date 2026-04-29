@@ -12,6 +12,7 @@ describe("自由剧场 v2 Agent Architecture", () => {
     test("GM agent has correct tools", () => {
       expect(gmAgent.name).toBe("GM");
       const toolNames = gmAgent.tools.map((t: any) => t.name);
+      expect(toolNames).toContain("enact_sequence");
       expect(toolNames).toContain("call_actor");
       expect(toolNames).toContain("call_scribe");
       expect(toolNames).toContain("call_archivist");
@@ -19,7 +20,7 @@ describe("自由剧场 v2 Agent Architecture", () => {
       expect(toolNames).toContain("read_file");
       expect(toolNames).toContain("write_file");
       expect(toolNames).toContain("glob_files");
-      expect(toolNames.length).toBe(7);
+      expect(toolNames.length).toBe(8);
     });
 
     test("Actor agent has correct tools", () => {

@@ -44,16 +44,17 @@ function buildCorePrompt(_lang: string): string {
 
 | 工具 | 用途 |
 |------|------|
-| call_actor | 角色表演——传入角色名+场景指示(direction) |
+| enact_sequence | 序列调度——规划并执行完整角色出场序列（自动清除旧记录、管理会话、维护交互记录） |
+| call_actor | 备用——单次角色表演（仅边缘场景） |
 | call_scribe | 交互记录→文学文本（交互记录自动注入，无需传参） |
 | call_archivist | 更新状态文件——传入叙事摘要+文学文本 |
-| clear_interaction_log | 清除当前交互记录（每一轮剧情的开始和结束，即阶段0的开始前和阶段3的结束后） |
+| clear_interaction_log | 清除当前交互记录（场景结束后） |
 | read_file | 读取 .novel/ 下任意文件 |
 | write_file | 写入 .novel/（主要用于 scenes/ 骨架） |
 | glob_files | 查找 .novel/ 下文件列表 |
 
 **调用流程**：
-- 新场景 → glob→write(骨架+初始剧本)→actor→actor→...→scribe→archivist
+- 新场景 → glob→write(骨架+初始剧本)→enact_sequence→scribe→archivist
 - 回忆/搜索 → glob→read
 - 场景结束 → clear_interaction_log
 
@@ -63,7 +64,7 @@ function buildCorePrompt(_lang: string): string {
 
 场景编号：glob_files("scenes/*.md") 取最大编号+1，空目录从 s001 开始。
 
-场景骨架模板（必须在 call_actor 之前用 write_file 创建，只创建一次，后续由 Archivist 补充）：
+场景骨架模板（必须在 enact_sequence 之前用 write_file 创建，只创建一次，后续由 Archivist 补充）：
 
 \`\`\`
 # 场景 sXXX
@@ -98,10 +99,6 @@ function buildCorePrompt(_lang: string): string {
 
 ## 4. 四阶段流程
 
-### 前置处理
-
-1. 调用 clear_interaction_log 清除交互记录，避免上下文污染
-
 ### 阶段0：准备（Orient）
 
 1. 解析用户指令，提取角色
@@ -115,27 +112,43 @@ function buildCorePrompt(_lang: string): string {
 2. 编写初始剧本
 3. write_file 创建场景骨架
 
-### 阶段2：演绎循环（Enact）
+### 阶段2：演绎调度（Enact）
 
-反应式循环：
-1. 回顾交互记录 + 初始剧本
-2. 决策：下一步需要哪个角色做什么
-3. call_actor(direction) → 获得角色输出
-4. 回到评估
+基于初始剧本和用户意图，规划完整的角色出场序列：
 
-**direction 规范**：
-- 首次调用：场景描述 + 相关节拍
-- 续演调用：另一角色言行 + 请反应
+enact_sequence({
+  schedule: [
+    { character: "角色A", direction: "场景描述+相关节拍" },
+    { character: "角色B", direction: "A的言行+请反应" },
+    { character: "角色A", direction: "B的回应+情感转折" },
+  ]
+})
 
-**终止条件**（满足任一即停止）：
+enact_sequence 会自动：
+- 清除旧交互记录
+- 按顺序依次调用 Actor
+- 自动管理角色会话（同角色自动复用）
+- 自动追加交互记录
+
+**direction 规范**（与 call_actor 一致）：
+- 首次出场：场景描述 + 相关节拍
+- 续演出场：另一角色言行 + 请反应
+
+**序列长度指引**：
+- 简单互动（2人对话）：3-5 步
+- 复杂场景（多人/冲突/转折）：5-8 步
+- 上限 10 步
+
+**规划终止条件**（在规划时评估）：
 1. 用户意图已实现
 2. 情感节拍闭合
-3. 10轮上限
+
+需要回顾 Actor 演绎细节时，可 read_file(".working/latest-interaction.md")。
 
 ### 阶段3：收束（Resolve）
 
 1. call_scribe（交互记录由 buildStoryContext() 自动注入）→ 获得文学文本
-2. 构造场景叙事摘要（见格式定义）
+2. 基于初始剧本 + direction 序列构造场景叙事摘要（必要时可读取交互记录补充细节）
 3. call_archivist({ narrativeSummary, literaryText }) → 状态文件更新
 4. clear_interaction_log 清除本轮交互记录
 5. 向用户呈现场景文本 + 状态提示
@@ -167,7 +180,8 @@ GM 构造叙事摘要传给 Archivist。GM 描述**发生了什么**，Archivist
 - 不替角色做用户没要求的决定；不添加未提及的超自然/剧情转折
 - 不使用"场景""分镜"等非小说语言
 - 严禁自主调用 reset_story
-- 每轮演绎中，每个角色使用独立且唯一的 session：首次调用某角色时不传 sessionId（自动新建），再次调用同一角色时传入该角色已有的 sessionId 复用
+- enact_sequence 自动管理角色会话和交互记录，无需手动管理 sessionId
+- call_actor 作为备用工具，仅在 enact_sequence 不适用的边缘场景使用
 - 工具调用连续失败2次→向用户说明，不无限重试
 - OOC/回忆等非场景指令不需要走四阶段流程，直接用 glob→read→回答
 
