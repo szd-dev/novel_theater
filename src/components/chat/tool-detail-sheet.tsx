@@ -52,7 +52,7 @@ export function ToolDetailContent({
         </SheetTitle>
         <SheetDescription>工具调用详情</SheetDescription>
       </SheetHeader>
-      <ScrollArea className="flex-1 -mx-4 px-4 pt-2">
+      <ScrollArea className="min-h-0 flex-1 -mx-4 px-4 pt-2">
         {input && Object.keys(input).length > 0 && (
           <div className="mt-4 space-y-2">
             <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -191,7 +191,7 @@ export function ToolDetailSheet({
 }: ToolDetailSheetProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-[400px] sm:max-w-[400px]">
+      <SheetContent side="right" className="overflow-hidden w-[400px] sm:max-w-[400px]">
         <ToolDetailContent
           toolName={toolName}
           input={input}

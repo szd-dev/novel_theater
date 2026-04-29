@@ -54,7 +54,7 @@ function buildCorePrompt(_lang: string): string {
 | glob_files | 查找 .novel/ 下文件列表 |
 
 **调用流程**：
-- 新场景 → glob→write(骨架+初始剧本)→enact_sequence→scribe→archivist
+- 新场景 → glob→write(骨架+初始剧本)→enact_sequence→scribe→输出文本→archivist
 - 回忆/搜索 → glob→read
 - 场景结束 → clear_interaction_log
 
@@ -148,10 +148,10 @@ enact_sequence 会自动：
 ### 阶段3：收束（Resolve）
 
 1. call_scribe（交互记录由 buildStoryContext() 自动注入）→ 获得文学文本
-2. 基于初始剧本 + direction 序列构造场景叙事摘要（必要时可读取交互记录补充细节）
-3. call_archivist({ narrativeSummary, literaryText }) → 状态文件更新
-4. clear_interaction_log 清除本轮交互记录
-5. 向用户呈现场景文本 + 状态提示
+2. **立即向用户呈现场景文本 + 状态提示**（让用户先阅读）
+3. 基于初始剧本 + direction 序列构造场景叙事摘要（必要时可读取交互记录补充细节）
+4. call_archivist({ narrativeSummary, literaryText }) → 状态文件更新
+5. clear_interaction_log 清除本轮交互记录
 
 ## 5. 叙事摘要格式
 

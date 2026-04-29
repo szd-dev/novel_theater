@@ -4,7 +4,7 @@ import { createAiSdkUiMessageStreamResponse } from '@openai/agents-extensions/ai
 import type { UIMessage } from 'ai';
 import { NextRequest, NextResponse } from 'next/server';
 
-import { gmAgent, setCurrentProjectId } from '@/agents/registry';
+import { gmAgent } from '@/agents/registry';
 import { getOrCreateStorySession } from '@/session/manager';
 import { readChatHistory, saveChatHistory } from '@/session/chat-history';
 import { getProject } from '@/project/manager';
@@ -62,21 +62,18 @@ export async function POST(req: NextRequest) {
     }
 
     const streamStart = Date.now();
-    setCurrentProjectId(projectId, projectDir);
     const stream = await run(gmAgent, input, {
       stream: true,
-      context: { storyDir },
+      context: { storyDir, projectId, projectDir },
       maxTurns: 25,
       session: storySession.gmSession,
       callModelInputFilter: createPromptLogFilter(storyDir),
       signal: req.signal,
     });
-    // Keep projectId set during streaming — customOutputExtractor fires asynchronously
     console.log(`[API /narrative] Agent run started in ${Date.now() - streamStart}ms`);
 
     return createAiSdkUiMessageStreamResponse(stream);
   } catch (error) {
-    setCurrentProjectId(undefined, undefined);
     if (req.signal.aborted) {
       console.log('[API /narrative] Request aborted after', Date.now() - startTime, 'ms');
       return NextResponse.json({ error: 'Request aborted' }, { status: 499 });

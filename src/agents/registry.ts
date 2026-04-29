@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 import { z } from 'zod';
 import { tool, run } from '@openai/agents';
+import type { RunContext } from '@openai/agents';
 import { gmAgent } from './gm';
 import { actorAgent } from './actor';
 import { scribeAgent } from './scribe';
@@ -13,12 +14,17 @@ import type { ExecutionLog } from '@/session/execution-log';
 import type { RunResult, Session } from '@openai/agents';
 import { createPromptLogFilter } from '@/lib/prompt-logger';
 
-let currentProjectId: string | undefined;
-let currentProjectDir: string | undefined;
+/** Context passed to GM agent run and accessible in all tool execute functions. */
+export interface AgentRunContext {
+  storyDir: string;
+  projectId: string;
+  projectDir: string;
+}
 
-export function setCurrentProjectId(projectId: string | undefined, projectDir: string | undefined): void {
-  currentProjectId = projectId;
-  currentProjectDir = projectDir;
+function getRunContext(runContext?: RunContext<unknown>): AgentRunContext | null {
+  const ctx = runContext?.context as AgentRunContext | undefined;
+  if (!ctx?.projectDir) return null;
+  return ctx;
 }
 
 function extractToolCalls(newItems: RunResult<any, any>['newItems']): string[] {
@@ -34,8 +40,8 @@ function buildExecutionLog(
   agentName: string,
   input: string,
   result: RunResult<any, any>,
+  projectId: string,
 ): ExecutionLog | null {
-  if (!currentProjectId) return null;
   return {
     id: crypto.randomUUID(),
     agentName,
@@ -62,11 +68,12 @@ const enactSequenceTool = tool({
       direction: z.string().describe('场景指示——告诉 Actor 角色应该做什么、面对什么情境'),
     })).min(1).max(10).describe('角色出场序列，按顺序执行'),
   }),
-  execute: async (input) => {
-    if (!currentProjectDir) return toolError('No active project');
-    const storyDir = join(currentProjectDir, '.novel');
+  execute: async (input, runContext) => {
+    const ctx = getRunContext(runContext);
+    if (!ctx) return toolError('No active project');
+    const { projectId, projectDir } = ctx;
+    const storyDir = join(projectDir, '.novel');
 
-    // Auto-clear stale interaction log before starting
     clearInteractionLog(storyDir);
 
     const sessionCache = new Map<string, { session: Session; sessionId: string }>();
@@ -78,7 +85,7 @@ const enactSequenceTool = tool({
       try {
         let sessionEntry = sessionCache.get(step.character);
         if (!sessionEntry) {
-          const created = createSubSession(currentProjectId!, currentProjectDir!, 'Actor', step.character);
+          const created = createSubSession(projectId, projectDir, 'Actor', step.character);
           sessionEntry = { session: created.session, sessionId: created.sessionId };
           sessionCache.set(step.character, sessionEntry);
         }
@@ -90,15 +97,14 @@ const enactSequenceTool = tool({
           callModelInputFilter: createPromptLogFilter(storyDir),
         });
 
-        // Auto-append interaction log (best-effort)
         try {
           appendInteractionLog(storyDir, step.character, String(result.finalOutput ?? ''));
         } catch {
           // Best-effort: don't block sequence on interaction log write failure
         }
 
-        const log = buildExecutionLog('Actor', `${step.character}: ${step.direction}`, result);
-        if (log && currentProjectId) addExecutionLog(currentProjectId, log);
+        const log = buildExecutionLog('Actor', `${step.character}: ${step.direction}`, result, projectId);
+        if (log) addExecutionLog(projectId, log);
 
         steps.push({ character: step.character, sessionId: sessionEntry.sessionId, status: 'success' });
         successCount++;
@@ -124,15 +130,17 @@ const callActorTool = tool({
     direction: z.string().describe('场景指示，告诉 Actor 角色应该做什么、面对什么情境'),
     sessionId: z.string().optional().describe('已有的 sub-session ID，传入则复用，不传则新建'),
   }),
-  execute: async (input) => {
-    if (!currentProjectDir) return toolError('No active project');
-    const storyDir = join(currentProjectDir, '.novel');
+  execute: async (input, runContext) => {
+    const ctx = getRunContext(runContext);
+    if (!ctx) return toolError('No active project');
+    const { projectId, projectDir } = ctx;
+    const storyDir = join(projectDir, '.novel');
 
     let isNewSession = false;
     let subSession: Session;
     let sessionId: string;
     if (input.sessionId) {
-      const existing = getSubSession(currentProjectId!, currentProjectDir!, input.sessionId);
+      const existing = getSubSession(projectId, projectDir, input.sessionId);
       if (existing) {
         subSession = existing;
         sessionId = input.sessionId;
@@ -140,7 +148,7 @@ const callActorTool = tool({
         return toolError(`Session ${input.sessionId} not found. Start a new session by calling without sessionId.`);
       }
     } else {
-      const created = createSubSession(currentProjectId!, currentProjectDir!, 'Actor', input.character);
+      const created = createSubSession(projectId, projectDir, 'Actor', input.character);
       subSession = created.session;
       sessionId = created.sessionId;
       isNewSession = true;
@@ -153,15 +161,14 @@ const callActorTool = tool({
       callModelInputFilter: createPromptLogFilter(storyDir),
     });
 
-    // Auto-append interaction log (best-effort)
     try {
       appendInteractionLog(storyDir, input.character, String(result.finalOutput ?? ''));
     } catch {
       // Best-effort: don't block Actor result on interaction log write failure
     }
 
-    const log = buildExecutionLog('Actor', `${input.character}: ${input.direction}`, result);
-    if (log && currentProjectId) addExecutionLog(currentProjectId, log);
+    const log = buildExecutionLog('Actor', `${input.character}: ${input.direction}`, result, projectId);
+    if (log) addExecutionLog(projectId, log);
 
     return toolResult(JSON.stringify({ output: String(result.finalOutput ?? ''), sessionId, isNewSession }));
   },
@@ -174,15 +181,17 @@ const callScribeTool = tool({
     sceneContext: z.string().describe('场景上下文——地点、时间、氛围描述'),
     sessionId: z.string().optional().describe('已有的 sub-session ID，传入则复用，不传则新建'),
   }),
-  execute: async (input) => {
-    if (!currentProjectDir) return toolError('No active project');
-    const storyDir = join(currentProjectDir, '.novel');
+  execute: async (input, runContext) => {
+    const ctx = getRunContext(runContext);
+    if (!ctx) return toolError('No active project');
+    const { projectId, projectDir } = ctx;
+    const storyDir = join(projectDir, '.novel');
 
     let isNewSession = false;
     let subSession: Session;
     let sessionId: string;
     if (input.sessionId) {
-      const existing = getSubSession(currentProjectId!, currentProjectDir!, input.sessionId);
+      const existing = getSubSession(projectId, projectDir, input.sessionId);
       if (existing) {
         subSession = existing;
         sessionId = input.sessionId;
@@ -190,7 +199,7 @@ const callScribeTool = tool({
         return toolError(`Session ${input.sessionId} not found. Start a new session by calling without sessionId.`);
       }
     } else {
-      const created = createSubSession(currentProjectId!, currentProjectDir!, 'Scribe');
+      const created = createSubSession(projectId, projectDir, 'Scribe');
       subSession = created.session;
       sessionId = created.sessionId;
       isNewSession = true;
@@ -203,8 +212,8 @@ const callScribeTool = tool({
       callModelInputFilter: createPromptLogFilter(storyDir),
     });
 
-    const log = buildExecutionLog('Scribe', input.sceneContext, result);
-    if (log && currentProjectId) addExecutionLog(currentProjectId, log);
+    const log = buildExecutionLog('Scribe', input.sceneContext, result, projectId);
+    if (log) addExecutionLog(projectId, log);
 
     return toolResult(JSON.stringify({ output: String(result.finalOutput ?? ''), sessionId, isNewSession }));
   },
@@ -218,15 +227,17 @@ const callArchivistTool = tool({
     literaryText: z.string().describe('Scribe 产出的完整文学文本'),
     sessionId: z.string().optional().describe('已有的 sub-session ID，传入则复用，不传则新建'),
   }),
-  execute: async (input) => {
-    if (!currentProjectDir) return toolError('No active project');
-    const storyDir = join(currentProjectDir, '.novel');
+  execute: async (input, runContext) => {
+    const ctx = getRunContext(runContext);
+    if (!ctx) return toolError('No active project');
+    const { projectId, projectDir } = ctx;
+    const storyDir = join(projectDir, '.novel');
 
     let isNewSession = false;
     let subSession: Session;
     let sessionId: string;
     if (input.sessionId) {
-      const existing = getSubSession(currentProjectId!, currentProjectDir!, input.sessionId);
+      const existing = getSubSession(projectId, projectDir, input.sessionId);
       if (existing) {
         subSession = existing;
         sessionId = input.sessionId;
@@ -234,7 +245,7 @@ const callArchivistTool = tool({
         return toolError(`Session ${input.sessionId} not found. Start a new session by calling without sessionId.`);
       }
     } else {
-      const created = createSubSession(currentProjectId!, currentProjectDir!, 'Archivist');
+      const created = createSubSession(projectId, projectDir, 'Archivist');
       subSession = created.session;
       sessionId = created.sessionId;
       isNewSession = true;
@@ -249,8 +260,8 @@ const callArchivistTool = tool({
       callModelInputFilter: createPromptLogFilter(storyDir),
     });
 
-    const log = buildExecutionLog('Archivist', prompt, result);
-    if (log && currentProjectId) addExecutionLog(currentProjectId, log);
+    const log = buildExecutionLog('Archivist', prompt, result, projectId);
+    if (log) addExecutionLog(projectId, log);
 
     return toolResult(JSON.stringify({ output: String(result.finalOutput ?? ''), sessionId, isNewSession }));
   },
@@ -260,9 +271,11 @@ const clearInteractionLogTool = tool({
   name: 'clear_interaction_log',
   description: '清除当前交互记录文件。通常在场景结束时调用。',
   parameters: z.object({}),
-  execute: async () => {
-    if (!currentProjectDir) return toolError('No active project');
-    const storyDir = join(currentProjectDir, '.novel');
+  execute: async (_input, runContext) => {
+    const ctx = getRunContext(runContext);
+    if (!ctx) return toolError('No active project');
+    const { projectDir } = ctx;
+    const storyDir = join(projectDir, '.novel');
     return toolResult(clearInteractionLog(storyDir));
   },
 });
