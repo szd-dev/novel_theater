@@ -69,6 +69,10 @@ export function ToolDetailContent({
                       <pre className="max-h-48 overflow-y-auto rounded-md bg-muted/50 p-2 text-xs whitespace-pre-wrap">
                         {value}
                       </pre>
+                    ) : typeof value === "object" && value !== null ? (
+                      <pre className="max-h-48 overflow-y-auto rounded-md bg-muted/50 p-2 text-xs whitespace-pre-wrap">
+                        {JSON.stringify(value, null, 2)}
+                      </pre>
                     ) : (
                       <span className="text-foreground">{String(value)}</span>
                     )}

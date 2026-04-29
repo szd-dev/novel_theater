@@ -96,7 +96,7 @@ export function ToolTag({ toolName, state, input, onClick }: ToolTagProps) {
               .map(([key, value]) => (
                 <div key={key} className="flex gap-1">
                   <span className="opacity-60">{key}:</span>
-                  <span>{truncate(String(value), 50)}</span>
+                  <span>{truncate(typeof value === "object" && value !== null ? JSON.stringify(value) : String(value), 50)}</span>
                 </div>
               ))}
           </TooltipContent>
