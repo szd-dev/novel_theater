@@ -24,9 +24,5 @@ export interface ScribePromptState {
 }
 
 export interface ArchivistPromptState {
-  /** Structured narrative summary from GM */
-  narrativeSummary?: string;
-  /** Literary text from Scribe */
-  literaryText?: string;
   storyContext?: string; // from buildStoryContext()
 }

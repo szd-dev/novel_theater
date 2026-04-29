@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   SheetHeader,
   SheetTitle,
@@ -8,8 +8,66 @@ import {
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CodeMirrorEditor } from "@/components/chat/code-mirror-editor";
-import { useAutosave } from "@/hooks/use-autosave";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+
+type SaveStatus = "idle" | "saving" | "saved" | "error";
+
+function useManualSave(options: {
+  content: string;
+  savedContent: string;
+  onSave: () => Promise<void>;
+  enabled?: boolean;
+}) {
+  const { content, savedContent, onSave, enabled = true } = options;
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const onSaveRef = useRef(onSave);
+  onSaveRef.current = onSave;
+
+  const isDirty = content !== savedContent;
+
+  const saveImmediately = useCallback(async () => {
+    if (!isDirty || !enabled) return;
+    setSaveStatus("saving");
+    try {
+      await onSaveRef.current();
+      setSaveStatus("saved");
+    } catch {
+      setSaveStatus("error");
+    }
+  }, [isDirty, enabled]);
+
+  // Cmd+S / Ctrl+S keyboard shortcut
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+        e.preventDefault();
+        saveImmediately();
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [saveImmediately]);
+
+  // Reset status to idle when content matches savedContent
+  useEffect(() => {
+    if (!isDirty && saveStatus === "saved") {
+      setSaveStatus("idle");
+    }
+  }, [isDirty, saveStatus]);
+
+  // Best-effort save on unmount
+  useEffect(() => {
+    return () => {
+      if (isDirty) {
+        onSaveRef.current().catch(() => {});
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return { saveStatus, saveImmediately, isDirty };
+}
 
 interface FileEditorSheetProps {
   projectId: string;
@@ -140,7 +198,7 @@ export function FileEditorSheet({
     }
   }, [projectId, filePath, content, originalHash]);
 
-  const { saveStatus, isDirty } = useAutosave({
+  const { saveStatus, saveImmediately, isDirty } = useManualSave({
     content,
     savedContent,
     onSave: save,
@@ -169,7 +227,7 @@ export function FileEditorSheet({
     }
   }, [projectId, filePath, directivesContent, directivesHash]);
 
-  const { saveStatus: directivesSaveStatus, isDirty: directivesIsDirty } = useAutosave({
+  const { saveStatus: directivesSaveStatus, saveImmediately: saveDirectivesImmediately, isDirty: directivesIsDirty } = useManualSave({
     content: directivesContent,
     savedContent: directivesSavedContent,
     onSave: saveDirectives,
@@ -209,6 +267,7 @@ export function FileEditorSheet({
 
   const currentSaveStatus = activeTab === "directives" ? directivesSaveStatus : saveStatus;
   const currentIsDirty = activeTab === "directives" ? directivesIsDirty : isDirty;
+  const currentSave = activeTab === "directives" ? saveDirectivesImmediately : saveImmediately;
 
   return (
     <>
@@ -216,19 +275,29 @@ export function FileEditorSheet({
         <SheetTitle className="flex items-center gap-2">
           <span>📄</span>
           <span>{fileName}</span>
-          <span className="ml-auto text-xs font-normal">
-            {currentSaveStatus === "saved" && (
-              <span className="text-emerald-600">Saved ✓</span>
+          <span className="ml-auto flex items-center gap-2">
+            {currentIsDirty && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={currentSave}
+                disabled={currentSaveStatus === "saving"}
+                className="h-6 px-2 text-xs"
+              >
+                {currentSaveStatus === "saving" ? "Saving…" : "Save"}
+              </Button>
             )}
-            {currentSaveStatus === "saving" && (
-              <span className="text-muted-foreground">Saving…</span>
-            )}
-            {currentSaveStatus === "error" && (
-              <span className="text-destructive">Save failed</span>
-            )}
-            {currentIsDirty && currentSaveStatus === "idle" && (
-              <span className="text-orange-500">Unsaved ●</span>
-            )}
+            <span className="text-xs font-normal">
+              {currentSaveStatus === "saved" && (
+                <span className="text-emerald-600">Saved ✓</span>
+              )}
+              {currentSaveStatus === "error" && (
+                <span className="text-destructive">Save failed</span>
+              )}
+              {currentIsDirty && currentSaveStatus === "idle" && (
+                <span className="text-orange-500">Unsaved ●</span>
+              )}
+            </span>
           </span>
         </SheetTitle>
         <SheetDescription className="flex items-center justify-between">

@@ -3,12 +3,42 @@ import { z } from 'zod';
 import { readNovelFile, writeNovelFile, globNovelFiles } from '@/store/story-files';
 import { toolResult, toolError } from '@/lib/tool-result';
 import { isSafePath, isValidCharacterFile, isValidSceneFile, isDirectivesPath, isAllowedFilePath } from '@/lib/validation';
+import { findLatestScene } from '@/context/extract';
 
 export { isSafePath } from '@/lib/validation';
 
 function getStoryDir(context: unknown): string {
   const ctx = context as { context?: { storyDir?: string } } | undefined;
   return ctx?.context?.storyDir ?? process.cwd();
+}
+
+/**
+ * For scene file writes: only allow creating new files (GM initializes skeleton).
+ * Overwriting existing scene files is forbidden.
+ */
+async function validateSceneWrite(dir: string, path: string): Promise<string | null> {
+  const existing = await readNovelFile(dir, path);
+  if (existing !== null) {
+    return `不允许覆盖已有场景文件 ${path}。场景文件只允许初始化创建，后续由 edit_file 补充。`;
+  }
+  return null;
+}
+
+/**
+ * For scene file edits: only allow editing the latest scene file (Archivist supplements).
+ * Editing historical scene files is forbidden.
+ */
+async function validateSceneEdit(dir: string, path: string): Promise<string | null> {
+  const latestScene = await findLatestScene(dir);
+  if (!latestScene) {
+    return `没有找到任何场景文件，无法编辑 ${path}。`;
+  }
+  // path is like "scenes/s001.md", latestScene is like "s001.md"
+  const sceneFileName = path.replace('scenes/', '');
+  if (sceneFileName !== latestScene) {
+    return `不允许编辑历史场景文件 ${path}。只能编辑最新场景文件 scenes/${latestScene}。`;
+  }
+  return null;
 }
 
 export const readFileTool = tool({
@@ -54,7 +84,11 @@ export const writeFileTool = tool({
       return toolError('Invalid character file content. Character files must start with "# Name" heading and have a "> " L0 line.');
     }
     if (input.path.startsWith('scenes/') && !isValidSceneFile(input.content)) {
-      return toolError('Invalid scene file content. Scene files must include sections: ## 地点, ## 时间, ## 在场角色, ## 经过.');
+      return toolError('Invalid scene file content. Scene files must include sections: ## 地点, ## 时间, ## 在场角色, ## 初始剧本, ## 经过.');
+    }
+    if (input.path.startsWith('scenes/')) {
+      const sceneError = await validateSceneWrite(storyDir, input.path);
+      if (sceneError) return toolError(sceneError);
     }
     await writeNovelFile(storyDir, input.path, input.content);
     return toolResult(`Successfully wrote to ${input.path}`);
@@ -80,6 +114,10 @@ export const editFileTool = tool({
     if (isDirectivesPath(input.path)) {
       return toolError('作者指令文件仅限手动编辑，AI不可修改。如需调整角色设定，请在作者指令中声明。');
     }
+    if (input.path.startsWith('scenes/')) {
+      const sceneError = await validateSceneEdit(storyDir, input.path);
+      if (sceneError) return toolError(sceneError);
+    }
     const content = await readNovelFile(storyDir, input.path);
     if (content === null) {
       return toolError(`File not found: ${input.path}`);
@@ -92,7 +130,7 @@ export const editFileTool = tool({
       return toolError('Invalid character file content after edit. Character files must start with "# Name" heading and have a "> " L0 line.');
     }
     if (input.path.startsWith('scenes/') && !isValidSceneFile(newContent)) {
-      return toolError('Invalid scene file content after edit. Scene files must include sections: ## 地点, ## 时间, ## 在场角色, ## 经过.');
+      return toolError('Invalid scene file content after edit. Scene files must include sections: ## 地点, ## 时间, ## 在场角色, ## 初始剧本, ## 经过.');
     }
     await writeNovelFile(storyDir, input.path, newContent);
     return toolResult(`Successfully edited ${input.path}`);

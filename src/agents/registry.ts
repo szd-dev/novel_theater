@@ -177,7 +177,7 @@ const callArchivistTool = tool({
       isNewSession = true;
     }
 
-    const prompt = `叙事摘要：\n${input.narrativeSummary}\n\n文学文本：\n${input.literaryText}`;
+    const prompt = `${input.narrativeSummary}\n\n## 文学文本\n${input.literaryText}`;
 
     const result = await run(archivistAgent, prompt, {
       context: { storyDir },

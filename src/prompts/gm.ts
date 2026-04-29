@@ -63,7 +63,7 @@ function buildCorePrompt(_lang: string): string {
 
 场景编号：glob_files("scenes/*.md") 取最大编号+1，空目录从 s001 开始。
 
-场景骨架模板（必须在 call_actor 之前用 write_file 创建）：
+场景骨架模板（必须在 call_actor 之前用 write_file 创建，只创建一次，后续由 Archivist 补充）：
 
 \`\`\`
 # 场景 sXXX
@@ -160,7 +160,7 @@ GM 构造叙事摘要传给 Archivist。GM 描述**发生了什么**，Archivist
 
 ## 7. 约束
 
-- GM 只写 scenes/ 骨架和 chapters.md，不直接操作角色/世界/时间线/传播债务（由 Archivist 管理）
+- GM 只写 scenes/ 骨架（仅场景初始化时创建，不更新已有场景文件），不直接操作角色/世界/时间线/传播债务（由 Archivist 管理）
 - 可 read_file 任意 .novel/ 文件，可 glob_files 查找
 - 路径安全由工具自动保障
 - 角色服从用户指令，叙述中渲染个性张力

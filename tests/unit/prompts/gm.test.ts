@@ -157,28 +157,23 @@ describe("getScribePrompt", () => {
 });
 
 describe("getArchivistPrompt", () => {
-  test("includes narrative summary when provided", () => {
-    const state: ArchivistPromptState = {
-      narrativeSummary: "场景中发生了重大事件",
-    };
+  test("includes core archivist identity", () => {
+    const state: ArchivistPromptState = {};
     const result = getArchivistPrompt(state);
-    expect(result).toContain("场景中发生了重大事件");
     expect(result).toContain("自由剧场 Archivist");
+    expect(result).toContain("edit_file");
   });
 
-  test("includes literary text when provided", () => {
+  test("includes story context when provided", () => {
     const state: ArchivistPromptState = {
-      literaryText: "月光洒在城堡上",
+      storyContext: "场景总数: 3，当前场景: s004",
     };
     const result = getArchivistPrompt(state);
-    expect(result).toContain("月光洒在城堡上");
+    expect(result).toContain("场景总数: 3，当前场景: s004");
   });
 
   test("no forbidden patterns", () => {
-    const state: ArchivistPromptState = {
-      narrativeSummary: "摘要",
-      literaryText: "文本",
-    };
+    const state: ArchivistPromptState = {};
     const result = getArchivistPrompt(state);
     checkNoForbiddenPatterns(result, "Archivist");
   });

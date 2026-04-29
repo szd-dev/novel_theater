@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useImperativeHandle, forwardRef, type Ref } from "react";
 import { ChevronRight, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -31,6 +31,10 @@ interface StoryFileTreeProps {
   onFileSelect: (path: string) => void;
 }
 
+export interface StoryFileTreeRef {
+  refresh: () => void;
+}
+
 interface FileTreeState {
   root: string[];
   characters: string[];
@@ -38,11 +42,11 @@ interface FileTreeState {
   directivesFiles: Set<string>;
 }
 
-export function StoryFileTree({
+export const StoryFileTree = forwardRef<StoryFileTreeRef, StoryFileTreeProps>(function StoryFileTree({
   projectId,
   selectedFilePath,
   onFileSelect,
-}: StoryFileTreeProps) {
+}: StoryFileTreeProps, ref: Ref<StoryFileTreeRef>) {
   const [files, setFiles] = useState<FileTreeState>({ root: [], characters: [], scenes: [], directivesFiles: new Set() });
   const [loading, setLoading] = useState(false);
   const [openDirs, setOpenDirs] = useState<Set<string>>(new Set());
@@ -100,6 +104,8 @@ export function StoryFileTree({
   useEffect(() => {
     fetchFiles();
   }, [fetchFiles]);
+
+  useImperativeHandle(ref, () => ({ refresh: fetchFiles }), [fetchFiles]);
 
   const toggleDir = useCallback((dir: string, open: boolean) => {
     setOpenDirs((prev) => {
@@ -197,4 +203,4 @@ export function StoryFileTree({
       </ScrollArea>
     </div>
   );
-}
+});

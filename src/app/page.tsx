@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo, type FormEvent } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef, type FormEvent } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { ProjectSelector } from "@/components/chat/project-selector";
-import { StoryFileTree } from "@/components/chat/story-file-tree";
+import { StoryFileTree, type StoryFileTreeRef } from "@/components/chat/story-file-tree";
 import { MessageList } from "@/components/chat/message-list";
 import { ChatInput } from "@/components/chat/chat-input";
 import { SceneIndicator } from "@/components/chat/scene-indicator";
@@ -30,6 +30,7 @@ interface ProjectChatProps {
 function ProjectChat({ projectId, onProjectSelect }: ProjectChatProps) {
   const [input, setInput] = useState("");
   const [sheetContent, setSheetContent] = useState<SheetContent>(null);
+  const fileTreeRef = useRef<StoryFileTreeRef>(null);
 
   const handleToolClick = useCallback(
     (tool: { toolName: string; input?: Record<string, unknown>; output?: string; error?: string; state?: DynamicToolState }) => {
@@ -57,6 +58,7 @@ function ProjectChat({ projectId, onProjectSelect }: ProjectChatProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ projectId, messages: currentMessages }),
       }).catch(() => { /* best-effort save */ });
+      fileTreeRef.current?.refresh();
     },
   });
 
@@ -70,10 +72,10 @@ function ProjectChat({ projectId, onProjectSelect }: ProjectChatProps) {
   }, [projectId]);
 
   const handleStop = useCallback(() => {
-    // Capture current messages before stopping — onFinish won't fire on abort
     const currentMessages = [...messages];
     stop();
     persistMessages(currentMessages);
+    fileTreeRef.current?.refresh();
   }, [messages, stop, persistMessages]);
 
   useEffect(() => {
@@ -127,6 +129,7 @@ function ProjectChat({ projectId, onProjectSelect }: ProjectChatProps) {
           />
           <Separator />
           <StoryFileTree
+            ref={fileTreeRef}
             projectId={projectId}
             selectedFilePath={sheetContent?.kind === "file-editor" ? sheetContent.filePath : null}
             onFileSelect={(path) => setSheetContent({ kind: "file-editor", filePath: path, projectId })}
