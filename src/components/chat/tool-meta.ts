@@ -29,6 +29,12 @@ export const AGENT_KEY_MAP: Record<string, AgentKey> = {
   Scribe: "scribe",
   Archivist: "archivist",
   GM: "gm",
+  "archivist-characters": "archivist",
+  "archivist-scene": "archivist",
+  "archivist-world": "archivist",
+  "archivist-plot": "archivist",
+  "archivist-timeline": "archivist",
+  "archivist-debts": "archivist",
 };
 
 export const TOOL_STEP_MAP: Record<string, number> = {
@@ -43,9 +49,17 @@ export const TOOL_STEP_MAP: Record<string, number> = {
   call_archivist_plot: 3,
   call_archivist_timeline: 3,
   call_archivist_debts: 3,
+  Actor: 1,
+  Scribe: 2,
+  "archivist-characters": 3,
+  "archivist-scene": 3,
+  "archivist-world": 3,
+  "archivist-plot": 3,
+  "archivist-timeline": 3,
+  "archivist-debts": 3,
 };
 
-export const AGENT_TOOLS = new Set(["call_actor", "call_scribe", "call_archivist", "call_archivist_characters", "call_archivist_scene", "call_archivist_world", "call_archivist_plot", "call_archivist_timeline", "call_archivist_debts", "enact_sequence", "submit_schedule"]);
+export const AGENT_TOOLS = new Set(["call_actor", "call_scribe", "call_archivist", "call_archivist_characters", "call_archivist_scene", "call_archivist_world", "call_archivist_plot", "call_archivist_timeline", "call_archivist_debts", "enact_sequence", "submit_schedule", "Actor", "Scribe", "archivist-characters", "archivist-scene", "archivist-world", "archivist-plot", "archivist-timeline", "archivist-debts"]);
 
 export const TOOL_META_MAP: Record<string, ToolMeta> = {
   call_actor: {
@@ -214,6 +228,70 @@ export const TOOL_META_MAP: Record<string, ToolMeta> = {
     color: "#EC4899",
     icon: "🎬",
     headlineParam: "schedule",
+    category: "agent",
+  },
+  Actor: {
+    toolName: "Actor",
+    agentKey: "actor",
+    label: "演员",
+    color: "#EC4899",
+    icon: "🎭",
+    category: "agent",
+  },
+  Scribe: {
+    toolName: "Scribe",
+    agentKey: "scribe",
+    label: "书记",
+    color: "#F59E0B",
+    icon: "📝",
+    category: "agent",
+  },
+  "archivist-characters": {
+    toolName: "archivist-characters",
+    agentKey: "archivist",
+    label: "角色",
+    color: "#10B981",
+    icon: "👤",
+    category: "agent",
+  },
+  "archivist-scene": {
+    toolName: "archivist-scene",
+    agentKey: "archivist",
+    label: "场景",
+    color: "#10B981",
+    icon: "🎬",
+    category: "agent",
+  },
+  "archivist-world": {
+    toolName: "archivist-world",
+    agentKey: "archivist",
+    label: "世界",
+    color: "#10B981",
+    icon: "🌍",
+    category: "agent",
+  },
+  "archivist-plot": {
+    toolName: "archivist-plot",
+    agentKey: "archivist",
+    label: "剧情",
+    color: "#10B981",
+    icon: "📖",
+    category: "agent",
+  },
+  "archivist-timeline": {
+    toolName: "archivist-timeline",
+    agentKey: "archivist",
+    label: "时间线",
+    color: "#10B981",
+    icon: "⏳",
+    category: "agent",
+  },
+  "archivist-debts": {
+    toolName: "archivist-debts",
+    agentKey: "archivist",
+    label: "伏笔",
+    color: "#10B981",
+    icon: "🔗",
     category: "agent",
   },
 };

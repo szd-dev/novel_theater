@@ -163,8 +163,9 @@ export async function buildStoryContext(
   // 故事进度 — scene count and current scene number
   const sceneFiles = await globNovelFiles(dir, "scenes/*.md");
   const sceneCount = sceneFiles.length;
-  const currentSceneNum = sceneCount + 1;
-  const currentSceneId = `s${String(currentSceneNum).padStart(3, '0')}`;
+  const currentSceneId = sceneCount > 0
+    ? `s${String(sceneCount).padStart(3, '0')}`
+    : 's001';
   sections.push({
     label: "故事进度",
     content: `场景总数: ${sceneCount}，当前场景: ${currentSceneId}`,

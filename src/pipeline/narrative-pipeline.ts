@@ -6,8 +6,7 @@ import { createAiSdkUiMessageStreamResponse } from "@openai/agents-extensions/ai
 import { setupTracing } from "@/lib/trace-setup";
 import { callAgent, callAgentsParallel, forwardRun } from "@/pipeline/call-agent";
 import { clearInteractionLog, appendInteractionLog } from "@/store/interaction-log";
-import { createSubSession, addExecutionLog } from "@/session/manager";
-import type { ExecutionLog } from "@/session/execution-log";
+import { createSubSession } from "@/session/manager";
 import { gmAgent } from "@/agents/gm";
 import { actorAgent } from "@/agents/actor";
 import { scribeAgent } from "@/agents/scribe";
@@ -22,67 +21,46 @@ import {
 
 type AnyRunResult = RunResult<any, any>;
 
-function extractToolCalls(newItems: AnyRunResult['newItems']): string[] {
-  return newItems
+function logAgentResult(agentName: string, result: AnyRunResult, startTime: number): void {
+  const duration = Date.now() - startTime;
+  const toolCalls = result.newItems
     .filter(item => item.type === 'tool_call_item')
     .map(item => {
       const rawItem = (item as { rawItem?: { name?: string } }).rawItem;
       return rawItem?.name ?? 'unknown';
     });
+  const inputTokens = result.rawResponses.reduce((s, r) => s + (r.usage?.inputTokens ?? 0), 0);
+  const outputTokens = result.rawResponses.reduce((s, r) => s + (r.usage?.outputTokens ?? 0), 0);
+  const output = String(result.finalOutput ?? '').slice(0, 100);
+
+  console.log(
+    `[Pipeline] ${agentName} completed in ${duration}ms, ` +
+    `tools: [${toolCalls.join(', ')}], ` +
+    `output: ${output}..., ` +
+    `tokens: ${inputTokens}in/${outputTokens}out`,
+  );
 }
 
-function buildExecutionLog(
-  agentName: string,
-  input: string,
-  result: AnyRunResult,
-  projectId: string,
-): ExecutionLog | null {
-  return {
-    id: crypto.randomUUID(),
-    agentName,
-    toolCallId: result.agentToolInvocation?.toolCallId,
-    input,
-    output: String(result.finalOutput ?? ''),
-    toolCalls: extractToolCalls(result.newItems),
-    timestamp: Date.now(),
-    tokenUsage: result.rawResponses.length
-      ? {
-          inputTokens: result.rawResponses.reduce((sum, r) => sum + (r.usage?.inputTokens ?? 0), 0),
-          outputTokens: result.rawResponses.reduce((sum, r) => sum + (r.usage?.outputTokens ?? 0), 0),
-        }
-      : undefined,
-  };
-}
-
-/** Schedule step from GM's submit_schedule tool call. */
 export interface ScheduleStep {
   character: string;
   direction: string;
 }
 
-/** Extracted schedule data from GM result. */
 export interface ScheduleData {
   schedule: ScheduleStep[];
   narrativeSummary: string;
 }
 
-/** Input for runScenePipeline. */
 export interface PipelineInput {
   input: string;
   projectId: string;
   projectDir: string;
 }
 
-/** Context for runScenePipeline. */
 export interface PipelineContext {
   storyDir: string;
 }
 
-/**
- * Extract the schedule from a GM RunResult by finding the submit_schedule tool call.
- * Looks through newItems for RunToolCallItem where rawItem.name === 'submit_schedule'.
- * Parses the arguments JSON string to get { schedule, narrativeSummary }.
- */
 export function extractScheduleFromResult(gmResult: AnyRunResult): ScheduleData | null {
   for (const item of gmResult.newItems) {
     if (item.type !== "tool_call_item") continue;
@@ -109,10 +87,6 @@ export function extractScheduleFromResult(gmResult: AnyRunResult): ScheduleData 
   return null;
 }
 
-/**
- * Extract narrativeSummary from a GM RunResult.
- * Returns the narrativeSummary from submit_schedule, or empty string if not found.
- */
 export function extractScheduleMeta(gmResult: AnyRunResult): string {
   const data = extractScheduleFromResult(gmResult);
   return data?.narrativeSummary ?? "";
@@ -125,6 +99,9 @@ async function runGmPhase(
   projectDir: string,
   gmSession: Session,
 ): Promise<{ events: RunStreamEvent[]; gmResult: AnyRunResult }> {
+  const startTime = Date.now();
+  console.log(`[Pipeline] GM starting, input: "${input.slice(0, 80)}..."`);
+
   const gmStream = await _run(
     gmAgent,
     input,
@@ -143,6 +120,8 @@ async function runGmPhase(
 
   await gmStream.completed;
   const gmResult = gmStream as unknown as AnyRunResult;
+  logAgentResult('GM', gmResult, startTime);
+
   return { events, gmResult };
 }
 
@@ -152,10 +131,13 @@ async function* enactPhase(
   projectId: string,
   projectDir: string,
 ): AsyncGenerator<RunStreamEvent> {
+  console.log(`[Pipeline] Enact phase: ${schedule.length} step(s)`);
   clearInteractionLog(storyDir);
   const sessionCache = new Map<string, { session: Session; sessionId: string }>();
 
   for (const step of schedule) {
+    const startTime = Date.now();
+    console.log(`[Pipeline] Actor "${step.character}" starting`);
     try {
       let sessionEntry = sessionCache.get(step.character);
       if (!sessionEntry) {
@@ -169,6 +151,7 @@ async function* enactPhase(
         input: `${step.character}: ${step.direction}`,
         context: { storyDir, characterName: step.character },
         session: sessionEntry.session,
+        runOptions: { maxTurns: 10 },
       });
 
       for await (const event of actorCall.events) {
@@ -176,8 +159,7 @@ async function* enactPhase(
       }
 
       const actorResult = await actorCall.result;
-      const actorLog = buildExecutionLog('Actor', `${step.character}: ${step.direction}`, actorResult, projectId);
-      if (actorLog) addExecutionLog(projectId, actorLog);
+      logAgentResult(`Actor(${step.character})`, actorResult, startTime);
       try {
         appendInteractionLog(storyDir, step.character, String(actorResult.finalOutput ?? ""));
       } catch {
@@ -185,7 +167,7 @@ async function* enactPhase(
       }
     } catch (error) {
       console.error(
-        `[Pipeline] Actor "${step.character}" failed:`,
+        `[Pipeline] Actor "${step.character}" failed after ${Date.now() - startTime}ms:`,
         error instanceof Error ? error.message : String(error),
       );
     }
@@ -195,8 +177,9 @@ async function* enactPhase(
 async function* scribePhase(
   narrativeSummary: string,
   storyDir: string,
-  projectId: string,
 ): AsyncGenerator<RunStreamEvent> {
+  const startTime = Date.now();
+  console.log(`[Pipeline] Scribe starting`);
   try {
     const scribeCall = callAgent({
       agent: scribeAgent,
@@ -209,17 +192,16 @@ async function* scribePhase(
     }
 
     const scribeResult = await scribeCall.result;
-    const scribeLog = buildExecutionLog('Scribe', narrativeSummary, scribeResult, projectId);
-    if (scribeLog) addExecutionLog(projectId, scribeLog);
+    logAgentResult('Scribe', scribeResult, startTime);
     const literaryText = String(scribeResult.finalOutput ?? "");
 
-    yield* archivistDagPhase(narrativeSummary, literaryText, storyDir, projectId);
+    yield* archivistDagPhase(narrativeSummary, literaryText, storyDir);
   } catch (error) {
     console.error(
-      "[Pipeline] Scribe failed:",
+      `[Pipeline] Scribe failed after ${Date.now() - startTime}ms:`,
       error instanceof Error ? error.message : String(error),
     );
-    yield* archivistDagPhase(narrativeSummary, "", storyDir, projectId);
+    yield* archivistDagPhase(narrativeSummary, "", storyDir);
   }
 }
 
@@ -227,12 +209,11 @@ async function* archivistDagPhase(
   narrativeSummary: string,
   literaryText: string,
   storyDir: string,
-  projectId: string,
 ): AsyncGenerator<RunStreamEvent> {
   const charactersPrompt = `${narrativeSummary}\n\n## 文学文本\n${literaryText}`;
 
-  // Phase 4a: Archivist-Characters (gate)
   const charactersAgent = createCharactersAgent(storyDir);
+  let charStartTime = Date.now();
   try {
     const charactersCall = callAgent({
       agent: charactersAgent,
@@ -243,16 +224,14 @@ async function* archivistDagPhase(
       yield event;
     }
     const charactersResult = await charactersCall.result;
-    const charactersLog = buildExecutionLog('Archivist-Characters', charactersPrompt, charactersResult, projectId);
-    if (charactersLog) addExecutionLog(projectId, charactersLog);
+    logAgentResult('Archivist-Characters', charactersResult, charStartTime);
   } catch (error) {
     console.error(
-      "[Pipeline] Archivist-Characters failed:",
+      `[Pipeline] Archivist-Characters failed after ${Date.now() - charStartTime}ms:`,
       error instanceof Error ? error.message : String(error),
     );
   }
 
-  // Phase 4b: Archivist [Scene ∥ World ∥ Plot ∥ Timeline] (parallel)
   const parallelConfigs = [
     { agent: createSceneAgent(storyDir), input: charactersPrompt, context: { storyDir } },
     { agent: createWorldAgent(storyDir), input: charactersPrompt, context: { storyDir } },
@@ -260,6 +239,8 @@ async function* archivistDagPhase(
     { agent: createTimelineAgent(storyDir), input: charactersPrompt, context: { storyDir } },
   ];
 
+  const parallelStartTime = Date.now();
+  console.log(`[Pipeline] Archivist parallel (Scene/World/Plot/Timeline) starting`);
   try {
     const parallelCall = callAgentsParallel(parallelConfigs);
     for await (const event of parallelCall.events) {
@@ -268,18 +249,17 @@ async function* archivistDagPhase(
     const parallelResults = await parallelCall.results;
     const parallelNames = ['Archivist-Scene', 'Archivist-World', 'Archivist-Plot', 'Archivist-Timeline'];
     for (let i = 0; i < parallelResults.length; i++) {
-      const log = buildExecutionLog(parallelNames[i], charactersPrompt, parallelResults[i], projectId);
-      if (log) addExecutionLog(projectId, log);
+      logAgentResult(parallelNames[i], parallelResults[i], parallelStartTime);
     }
   } catch (error) {
     console.error(
-      "[Pipeline] Archivist parallel (Scene/World/Plot/Timeline) failed:",
+      `[Pipeline] Archivist parallel failed after ${Date.now() - parallelStartTime}ms:`,
       error instanceof Error ? error.message : String(error),
     );
   }
 
-  // Phase 4c: Archivist-Debts (serial last)
   const debtsAgent = createDebtsAgent(storyDir);
+  const debtsStartTime = Date.now();
   try {
     const debtsCall = callAgent({
       agent: debtsAgent,
@@ -290,20 +270,15 @@ async function* archivistDagPhase(
       yield event;
     }
     const debtsResult = await debtsCall.result;
-    const debtsLog = buildExecutionLog('Archivist-Debts', charactersPrompt, debtsResult, projectId);
-    if (debtsLog) addExecutionLog(projectId, debtsLog);
+    logAgentResult('Archivist-Debts', debtsResult, debtsStartTime);
   } catch (error) {
     console.error(
-      "[Pipeline] Archivist-Debts failed:",
+      `[Pipeline] Archivist-Debts failed after ${Date.now() - debtsStartTime}ms:`,
       error instanceof Error ? error.message : String(error),
     );
   }
 }
 
-/**
- * Create the scene pipeline async generator.
- * Yields RunStreamEvents in order: GM → Actor(s) → Scribe → Archivist DAG.
- */
 export async function* createSceneStream(
   input: PipelineInput,
   context: PipelineContext,
@@ -320,25 +295,20 @@ export async function* createSceneStream(
       trace.metadata = { projectId, storyDir };
 
       async function* innerStream(): AsyncGenerator<RunStreamEvent> {
-        // Phase 1: Forward GM stream
         const { events: gmEvents, gmResult } = await runGmPhase(
           input.input, storyDir, projectId, projectDir, gmSession,
         );
         yield* gmEvents;
 
-        // Check for schedule
         const scheduleData = extractScheduleFromResult(gmResult);
         if (!scheduleData) return;
 
         const { schedule, narrativeSummary } = scheduleData;
 
-        // Phase 2: Enact
         yield* enactPhase(schedule, storyDir, projectId, projectDir);
 
-        // Phase 3 + 4: Scribe → Archivist DAG
-        yield* scribePhase(narrativeSummary, storyDir, projectId);
+        yield* scribePhase(narrativeSummary, storyDir);
 
-        // Clear interaction log after all phases complete
         clearInteractionLog(storyDir);
       }
 
@@ -352,10 +322,6 @@ export async function* createSceneStream(
   );
 }
 
-/**
- * Run the full scene pipeline: GM → Actor(s) → Scribe → Archivist DAG.
- * Returns a Response suitable for the AI SDK UI stream adapter.
- */
 export function runScenePipeline(
   input: PipelineInput,
   context: PipelineContext,

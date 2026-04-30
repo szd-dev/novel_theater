@@ -11,11 +11,37 @@ interface TraceLogEntry {
   agent?: string;
   model?: string;
   usage?: { inputTokens?: number; outputTokens?: number };
-  input?: string;
-  output?: string;
+  instructions?: string;
+  input?: unknown;
+  output?: unknown;
   tools?: string[];
   handoffs?: string[];
   duration?: number;
+}
+
+function extractSystemPrompt(messages: Array<Record<string, unknown>> | undefined): string | undefined {
+  if (!messages) return undefined;
+  for (const msg of messages) {
+    if (msg.role === "system" || msg.role === "developer") {
+      const content = msg.content;
+      if (typeof content === "string") return content;
+      if (Array.isArray(content)) {
+        return content
+          .filter((p: Record<string, unknown>) => p.type === "input_text" && typeof p.text === "string")
+          .map((p: Record<string, unknown>) => p.text)
+          .join("\n");
+      }
+    }
+  }
+  return undefined;
+}
+
+function extractTextFromMessages(messages: Array<Record<string, unknown>> | undefined): string | undefined {
+  if (!messages || messages.length === 0) return undefined;
+  const roles = messages.map((msg) =>
+    typeof msg.role === "string" ? msg.role : "unknown",
+  );
+  return `${messages.length} message(s): ${roles.join(",")}`;
 }
 
 function extractEntry(span: Span<SpanData>): TraceLogEntry | null {
@@ -45,6 +71,7 @@ function extractEntry(span: Span<SpanData>): TraceLogEntry | null {
     }
     case "generation": {
       const genData = data as GenerationSpanData;
+      const instructions = extractSystemPrompt(genData.input);
       return {
         ...base,
         model: genData.model,
@@ -52,8 +79,9 @@ function extractEntry(span: Span<SpanData>): TraceLogEntry | null {
           inputTokens: genData.usage?.input_tokens,
           outputTokens: genData.usage?.output_tokens,
         },
-        input: summarizeMessages(genData.input),
-        output: summarizeMessages(genData.output),
+        instructions,
+        input: extractTextFromMessages(genData.input),
+        output: extractTextFromMessages(genData.output),
       };
     }
     case "function": {
@@ -61,25 +89,13 @@ function extractEntry(span: Span<SpanData>): TraceLogEntry | null {
       return {
         ...base,
         agent: funcData.name,
-        input: truncate(funcData.input, 2000),
-        output: truncate(funcData.output, 2000),
+        input: funcData.input,
+        output: funcData.output,
       };
     }
     default:
       return { ...base };
   }
-}
-
-function summarizeMessages(messages: Array<Record<string, unknown>> | undefined): string | undefined {
-  if (!messages || messages.length === 0) return undefined;
-  const count = messages.length;
-  const roles = messages.map((m) => m.role ?? "unknown").join(",");
-  return `${count} message(s): ${roles}`;
-}
-
-function truncate(value: string, maxLen: number): string {
-  if (value.length <= maxLen) return value;
-  return value.slice(0, maxLen) + `… [truncated, ${value.length} chars total]`;
 }
 
 function ensureLogPath(storyDir: string): string {
@@ -88,14 +104,9 @@ function ensureLogPath(storyDir: string): string {
   return join(workingDir, "agent-logs.jsonl");
 }
 
-/**
- * ProjectTraceExporter implements TracingExporter from @openai/agents.
- * Writes span data to {storyDir}/.working/agent-logs.jsonl per project.
- * Reads projectId and storyDir from the Trace's metadata field.
- * Best-effort writing — never throws, never blocks Agent execution.
- */
 export class ProjectTraceExporter implements TracingExporter {
   async export(items: (Trace | Span<SpanData>)[]): Promise<void> {
+    console.error(`[TraceExporter] export called with ${items.length} items`);
     try {
       const byStoryDir = new Map<string, Span<SpanData>[]>();
 
@@ -104,6 +115,7 @@ export class ProjectTraceExporter implements TracingExporter {
 
         const span = item as Span<SpanData>;
         const storyDir = span.traceMetadata?.storyDir as string | undefined;
+        console.error(`[TraceExporter] span type=${span.spanData.type} storyDir=${storyDir ?? 'undefined'}`);
         if (!storyDir) continue;
 
         const existing = byStoryDir.get(storyDir);
@@ -127,10 +139,11 @@ export class ProjectTraceExporter implements TracingExporter {
 
         if (lines.length > 0) {
           appendFileSync(logPath, lines.join("\n") + "\n", "utf-8");
+          console.error(`[TraceExporter] wrote ${lines.length} lines to ${logPath}`);
         }
       }
-    } catch {
-      // Best-effort: don't throw on write errors
+    } catch (err) {
+      console.error("[TraceExporter] export failed:", err);
     }
   }
 }

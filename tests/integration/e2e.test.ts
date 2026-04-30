@@ -17,7 +17,8 @@ describe("自由剧场 v2 Agent Architecture", () => {
       expect(toolNames).toContain("read_file");
       expect(toolNames).toContain("write_file");
       expect(toolNames).toContain("glob_files");
-      expect(toolNames.length).toBe(4);
+      expect(toolNames).toContain("resolve_character");
+      expect(toolNames.length).toBe(5);
     });
 
     test("Actor agent has correct tools", () => {

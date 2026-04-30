@@ -139,7 +139,7 @@ function ProjectChat({ projectId, onProjectSelect }: ProjectChatProps) {
         </aside>
         <main className="flex min-h-0 flex-1 flex-col">
           <SceneIndicator threadId={projectId} />
-          <MessageList messages={messages} status={status} threadId={projectId} onToolClick={handleToolClick} error={error} onClearError={clearError} />
+          <MessageList messages={messages} status={status} onToolClick={handleToolClick} error={error} onClearError={clearError} />
           <ChatInput
             projectId={projectId}
             onSend={handleSend}

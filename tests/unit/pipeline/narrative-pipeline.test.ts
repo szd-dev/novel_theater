@@ -42,7 +42,7 @@ function createTestAgent(name: string) {
 }
 
 function createMockRunResult(finalOutput: unknown = "test output", newItems: AnyRunResult["newItems"] = []): AnyRunResult {
-  return { finalOutput, newItems } as AnyRunResult;
+  return { finalOutput, newItems, rawResponses: [] } as unknown as AnyRunResult;
 }
 
 function createMockSession(): Session {

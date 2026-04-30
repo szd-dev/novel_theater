@@ -3,7 +3,6 @@ import { existsSync, rmSync } from "node:fs";
 import type { Session } from "@openai/agents";
 import { FileSession } from "./file-session";
 import type { StorySession, SessionIndex, SubSessionEntry, AgentName } from "./types";
-import type { ExecutionLog } from "./execution-log";
 import {
   readSessionIndex,
   writeSessionIndex,
@@ -27,7 +26,6 @@ export function createStorySession(projectId: string, projectDir: string): Story
     projectDir,
     gmSession: new FileSession({ storageDir: sessionsDir, sessionId: index.gmSessionId }),
     subSessions: new Map(),
-    executionLogs: [],
   };
   sessions.set(projectId, session);
   return session;
@@ -76,7 +74,6 @@ export function getSubSession(projectId: string, projectDir: string, sessionId: 
     if (existing) return existing;
   }
 
-  // Disk re-hydration: check if session exists on disk
   const sessionsDir = getSessionsDir(projectDir);
   const historyPath = join(sessionsDir, "subagent", sessionId, "history.json");
   if (existsSync(historyPath)) {
@@ -90,22 +87,6 @@ export function getSubSession(projectId: string, projectDir: string, sessionId: 
   return undefined;
 }
 
-export function addExecutionLog(projectId: string, log: ExecutionLog): void {
-  const session = sessions.get(projectId);
-  if (!session) return;
-  session.executionLogs.push(log);
-}
-
-export function getExecutionLogs(projectId: string): ExecutionLog[] {
-  const session = sessions.get(projectId);
-  return session?.executionLogs ?? [];
-}
-
-export function getExecutionLog(projectId: string, logId: string): ExecutionLog | undefined {
-  const session = sessions.get(projectId);
-  return session?.executionLogs.find(log => log.id === logId);
-}
-
 export function clearStorySession(projectId: string, projectDir?: string): void {
   sessions.delete(projectId);
   if (projectDir) {
@@ -114,11 +95,6 @@ export function clearStorySession(projectId: string, projectDir?: string): void 
       rmSync(sessionsDir, { recursive: true, force: true });
     }
   }
-}
-
-/** @deprecated Use getOrCreateStorySession instead */
-export function getCharacterSession(_threadId: string, _characterName: string): Session {
-  throw new Error("getCharacterSession is deprecated. Use createSubSession instead.");
 }
 
 export function readIndex(projectDir: string): SessionIndex | null {

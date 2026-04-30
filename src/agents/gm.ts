@@ -2,8 +2,10 @@ import { Agent } from '@openai/agents';
 import { getModel } from '@/lib/models';
 import { getGMPrompt } from '@/prompts/gm';
 import { buildStoryContext } from '@/context/build-story-context';
+import { submitScheduleTool } from '@/tools/submit-schedule';
+import { readFileTool, writeFileTool, globFilesTool } from '@/tools/file-tools';
+import { resolveCharacterTool } from '@/tools/character-tools';
 
-// Tools are set in registry.ts after asTool registration
 export const gmAgent = new Agent({
   name: 'GM',
   model: getModel('gm'),
@@ -14,5 +16,5 @@ export const gmAgent = new Agent({
       storyContext: storyContext ?? undefined,
     });
   },
-  tools: [], // Populated in registry.ts
+  tools: [submitScheduleTool, readFileTool, writeFileTool, globFilesTool, resolveCharacterTool],
 });

@@ -78,11 +78,11 @@ describe("getGMPrompt", () => {
     expect(result).not.toContain("clear_interaction_log");
   });
 
-  test("states GM only does Orient + Script", () => {
+  test("states GM only does Orient + Script + Submit", () => {
     const state: GMPromptState = {};
     const result = getGMPrompt(state);
-    expect(result).toContain("GM 的职责到此结束");
-    expect(result).toContain("系统自动执行后续流程");
+    expect(result).toContain("submit_schedule");
+    expect(result).toContain("后续由系统自动执行");
   });
 
   test("no LangGraph references", () => {

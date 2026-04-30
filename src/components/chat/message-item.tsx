@@ -1,23 +1,20 @@
 "use client";
 
-import { useState, type ReactElement } from "react";
+import { type ReactElement } from "react";
 import type { UIMessage } from "ai";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { AgentLabel } from "@/components/chat/agent-label";
 import { ToolTag, type DynamicToolState } from "@/components/chat/tool-tag";
 import { splitBySteps } from "@/components/chat/message-segments";
-import { SessionModal } from "@/components/chat/session-modal";
 import { toolNameToAgentKey } from "@/components/chat/tool-meta";
 
 interface MessageItemProps {
   message: UIMessage;
-  threadId?: string;
   onToolClick?: (tool: { toolName: string; input?: Record<string, unknown>; output?: string; error?: string; state?: DynamicToolState }) => void;
 }
 
 function extractAgentLabel(message: UIMessage): string | null {
-  // New: check dynamic-tool parts (Agent-as-Tool pattern)
   for (const part of message.parts) {
     if (part.type === "dynamic-tool") {
       const toolName = (part as { toolName?: string }).toolName;
@@ -29,7 +26,6 @@ function extractAgentLabel(message: UIMessage): string | null {
       }
     }
   }
-  // Legacy: check data-* parts (backward compat)
   for (const part of message.parts) {
     if (part.type.startsWith("data-") && "data" in part) {
       const data = (part as { data: Record<string, unknown> }).data;
@@ -60,7 +56,6 @@ function separateParts(
   parts.forEach((part, i) => {
     if (part.type === "text") {
       const text = part.text;
-      // Skip empty/whitespace-only text parts to avoid empty bubbles
       if (!text || !text.trim()) return;
       textParts.push(
         <span key={`text-${i}`} className="whitespace-pre-wrap">
@@ -97,18 +92,15 @@ function separateParts(
         />
       );
     }
-    // data-* and step-start parts are ignored
   });
 
   return { textParts, toolParts };
 }
 
-export function MessageItem({ message, threadId, onToolClick }: MessageItemProps) {
+export function MessageItem({ message, onToolClick }: MessageItemProps) {
   const isUser = message.role === "user";
   const agentLabel = extractAgentLabel(message);
   const segments = !isUser ? splitBySteps(message) : [];
-  const [showSession, setShowSession] = useState(false);
-  const hasToolCalls = message.parts.some((p) => p.type === "dynamic-tool");
 
   if (isUser || segments.length <= 1) {
     const { textParts, toolParts } = separateParts(
@@ -129,15 +121,6 @@ export function MessageItem({ message, threadId, onToolClick }: MessageItemProps
               {agentLabel}
             </Badge>
           )}
-          {!isUser && hasToolCalls && threadId && (
-            <button
-              onClick={() => setShowSession(true)}
-              className="text-xs text-muted-foreground hover:text-foreground"
-              title="查看执行日志"
-            >
-              📋
-            </button>
-          )}
         </div>
         {textParts.length > 0 && (
           <div
@@ -154,30 +137,12 @@ export function MessageItem({ message, threadId, onToolClick }: MessageItemProps
         {toolParts.length > 0 && (
           <div className="flex flex-wrap gap-1.5">{toolParts}</div>
         )}
-        {threadId && (
-          <SessionModal
-            threadId={threadId}
-            open={showSession}
-            onOpenChange={setShowSession}
-          />
-        )}
       </div>
     );
   }
 
   return (
     <div className="flex w-full flex-col items-start gap-2">
-      <div className="flex items-center gap-2">
-        {hasToolCalls && threadId && (
-          <button
-            onClick={() => setShowSession(true)}
-            className="text-xs text-muted-foreground hover:text-foreground"
-            title="查看执行日志"
-          >
-            📋
-          </button>
-        )}
-      </div>
       {segments.map((segment, i) => {
         const { textParts, toolParts } = separateParts(
           segment.parts,
@@ -197,13 +162,6 @@ export function MessageItem({ message, threadId, onToolClick }: MessageItemProps
           </div>
         );
       })}
-      {threadId && (
-        <SessionModal
-          threadId={threadId}
-          open={showSession}
-          onOpenChange={setShowSession}
-        />
-      )}
     </div>
   );
 }

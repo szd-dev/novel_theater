@@ -30,13 +30,12 @@ function deriveProgress(messages: UIMessage[], status: ChatStatus) {
 interface MessageListProps {
   messages: UIMessage[];
   status: ChatStatus;
-  threadId?: string;
   onToolClick?: (tool: { toolName: string; input?: Record<string, unknown>; output?: string; error?: string; state?: DynamicToolState }) => void;
   error?: Error;
   onClearError?: () => void;
 }
 
-export function MessageList({ messages, status, threadId, onToolClick, error, onClearError }: MessageListProps) {
+export function MessageList({ messages, status, onToolClick, error, onClearError }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const { currentStep, isThinking } = deriveProgress(messages, status);
 
@@ -59,7 +58,7 @@ export function MessageList({ messages, status, threadId, onToolClick, error, on
         )}
         <div className="flex flex-col gap-4">
           {messages.map((message) => (
-            <MessageItem key={message.id} message={message} threadId={threadId} onToolClick={onToolClick} />
+            <MessageItem key={message.id} message={message} onToolClick={onToolClick} />
           ))}
           {(status === "submitted" || status === "streaming") && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">

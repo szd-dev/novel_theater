@@ -31,7 +31,7 @@ export interface AgentCall {
 }
 
 function buildRunOptions(config: AgentCallConfig): Record<string, unknown> {
-  const options: Record<string, unknown> = { ...config.runOptions };
+  const options: Record<string, unknown> = { maxTurns: 25, ...config.runOptions };
   if (config.context) options.context = config.context;
   if (config.session) options.session = config.session;
   return options;
@@ -89,7 +89,10 @@ export function callAgent(config: AgentCallConfig): AgentCall {
       const output = result.finalOutput != null ? String(result.finalOutput) : "";
       yield emitToolOutput(config, toolCallId, output);
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       rejectResult(error);
+      // Emit tool output with error so UI doesn't hang on "thinking" forever
+      yield emitToolOutput(config, toolCallId, `Error: ${errorMessage}`);
       throw error;
     }
   }
@@ -121,19 +124,36 @@ export function callAgentsParallel(configs: AgentCallConfig[]): {
       ),
     );
 
-    const errors = settled.filter((r): r is PromiseRejectedResult => r.status === "rejected");
+    const results: AnyRunResult[] = [];
+    const errors: PromiseRejectedResult[] = [];
+
+    for (let i = 0; i < settled.length; i++) {
+      const r = settled[i];
+      if (r.status === "fulfilled") {
+        results[i] = r.value;
+      } else {
+        errors.push(r);
+        results[i] = undefined as unknown as AnyRunResult;
+      }
+    }
+
+    for (let i = 0; i < configs.length; i++) {
+      const r = settled[i];
+      if (r.status === "fulfilled") {
+        const output = r.value.finalOutput != null ? String(r.value.finalOutput) : "";
+        yield emitToolOutput(configs[i], toolCallIds[i], output);
+      } else {
+        const errorMessage = r.reason instanceof Error ? r.reason.message : String(r.reason);
+        yield emitToolOutput(configs[i], toolCallIds[i], `Error: ${errorMessage}`);
+      }
+    }
+
     if (errors.length > 0) {
       rejectResults(errors[0].reason);
       throw errors[0].reason;
     }
 
-    const results = settled.map((r) => (r as PromiseFulfilledResult<AnyRunResult>).value);
     resolveResults(results);
-
-    for (let i = 0; i < configs.length; i++) {
-      const output = results[i].finalOutput != null ? String(results[i].finalOutput) : "";
-      yield emitToolOutput(configs[i], toolCallIds[i], output);
-    }
   }
 
   return { events: events(), results: resultsPromise };
