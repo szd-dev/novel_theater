@@ -51,6 +51,7 @@ function ProjectChat({ projectId, onProjectSelect }: ProjectChatProps) {
   const { messages, status, sendMessage, stop, setMessages, error, clearError } = useChat({
     transport,
     id: projectId,
+    experimental_throttle: 50,
     onFinish: ({ messages: currentMessages }) => {
       if (!projectId || currentMessages.length === 0) return;
       fetch("/api/narrative", {

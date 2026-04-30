@@ -75,7 +75,7 @@ export const StoryFileTree = forwardRef<StoryFileTreeRef, StoryFileTreeProps>(fu
 
       const characterDirectives = characterFiles.filter((f) => f.endsWith(".directives.md"));
       for (const df of characterDirectives) {
-        directivesNames.add(`characters/${df.replace(".directives.md", ".md")}`);
+        directivesNames.add(df.replace(".directives.md", ".md"));
       }
 
       const rootDirectivesBase = ["world.md", "plot.md", "timeline.md"];
@@ -178,19 +178,19 @@ export const StoryFileTree = forwardRef<StoryFileTreeRef, StoryFileTreeProps>(fu
               <CollapsibleContent>
                 <div className="space-y-0.5">
                   {dir.files.map((file) => {
-                    const filePath = `${dir.name}/${file}`;
-                    const hasDirectives = files.directivesFiles.has(filePath);
+                    const hasDirectives = files.directivesFiles.has(file);
+                    const displayName = file.split("/").pop()?.replace(".md", "") ?? file;
                     return (
                       <button
                         key={file}
-                        onClick={() => onFileSelect(filePath)}
+                        onClick={() => onFileSelect(file)}
                         className={cn(
                           "flex w-full items-center gap-2 rounded-md pl-7 pr-2 py-1.5 text-sm cursor-pointer hover:bg-muted",
-                          selectedFilePath === filePath && "bg-muted font-medium",
+                          selectedFilePath === file && "bg-muted font-medium",
                         )}
                       >
                         <span className="shrink-0">{DEFAULT_FILE_ICON}</span>
-                        <span className="truncate">{file.replace(".md", "")}</span>
+                        <span className="truncate">{displayName}</span>
                         {hasDirectives && <span className="ml-auto shrink-0 text-xs" title="有作者指令">📋</span>}
                       </button>
                     );
