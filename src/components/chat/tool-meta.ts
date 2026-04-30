@@ -32,13 +32,20 @@ export const AGENT_KEY_MAP: Record<string, AgentKey> = {
 };
 
 export const TOOL_STEP_MAP: Record<string, number> = {
+  submit_schedule: 0,
   call_actor: 1,
   enact_sequence: 1,
   call_scribe: 2,
   call_archivist: 3,
+  call_archivist_characters: 3,
+  call_archivist_scene: 3,
+  call_archivist_world: 3,
+  call_archivist_plot: 3,
+  call_archivist_timeline: 3,
+  call_archivist_debts: 3,
 };
 
-export const AGENT_TOOLS = new Set(["call_actor", "call_scribe", "call_archivist", "enact_sequence"]);
+export const AGENT_TOOLS = new Set(["call_actor", "call_scribe", "call_archivist", "call_archivist_characters", "call_archivist_scene", "call_archivist_world", "call_archivist_plot", "call_archivist_timeline", "call_archivist_debts", "enact_sequence", "submit_schedule"]);
 
 export const TOOL_META_MAP: Record<string, ToolMeta> = {
   call_actor: {
@@ -65,6 +72,69 @@ export const TOOL_META_MAP: Record<string, ToolMeta> = {
     label: "场记",
     color: "#10B981",
     icon: "📋",
+    headlineParam: "narrativeSummary",
+    category: "agent",
+  },
+  submit_schedule: {
+    toolName: "submit_schedule",
+    agentKey: "gm",
+    label: "排程",
+    color: "#8B5CF6",
+    icon: "📅",
+    headlineParam: "schedule",
+    category: "system",
+  },
+  call_archivist_characters: {
+    toolName: "call_archivist_characters",
+    agentKey: "archivist",
+    label: "角色",
+    color: "#10B981",
+    icon: "👤",
+    headlineParam: "narrativeSummary",
+    category: "agent",
+  },
+  call_archivist_scene: {
+    toolName: "call_archivist_scene",
+    agentKey: "archivist",
+    label: "场景",
+    color: "#10B981",
+    icon: "🎬",
+    headlineParam: "narrativeSummary",
+    category: "agent",
+  },
+  call_archivist_world: {
+    toolName: "call_archivist_world",
+    agentKey: "archivist",
+    label: "世界",
+    color: "#10B981",
+    icon: "🌍",
+    headlineParam: "narrativeSummary",
+    category: "agent",
+  },
+  call_archivist_plot: {
+    toolName: "call_archivist_plot",
+    agentKey: "archivist",
+    label: "剧情",
+    color: "#10B981",
+    icon: "📖",
+    headlineParam: "narrativeSummary",
+    category: "agent",
+  },
+  call_archivist_timeline: {
+    toolName: "call_archivist_timeline",
+    agentKey: "archivist",
+    label: "时间线",
+    color: "#10B981",
+    icon: "⏳",
+    headlineParam: "narrativeSummary",
+    category: "agent",
+  },
+  call_archivist_debts: {
+    toolName: "call_archivist_debts",
+    agentKey: "archivist",
+    label: "伏笔",
+    color: "#10B981",
+    icon: "🔗",
     headlineParam: "narrativeSummary",
     category: "agent",
   },

@@ -1,0 +1,5 @@
+=== Old tool symbols in src/ ===
+(no matches)
+
+=== createPromptLogFilter in registry.ts and route.ts ===
+(no matches)

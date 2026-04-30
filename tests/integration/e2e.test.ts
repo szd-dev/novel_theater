@@ -3,7 +3,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { rmSync, existsSync } from "node:fs";
 
-import { gmAgent, actorAgent, scribeAgent, archivistAgent } from "@/agents/registry";
+import { gmAgent, actorAgent, scribeAgent } from "@/agents/registry";
+import { archivistAgent } from "@/agents/archivist";
 import { createStorySession, getStorySession, getOrCreateStorySession, clearStorySession } from "@/session/manager";
 import { initStory, archiveStory, resetStory } from "@/store/story-files";
 
@@ -12,15 +13,11 @@ describe("自由剧场 v2 Agent Architecture", () => {
     test("GM agent has correct tools", () => {
       expect(gmAgent.name).toBe("GM");
       const toolNames = gmAgent.tools.map((t: any) => t.name);
-      expect(toolNames).toContain("enact_sequence");
-      expect(toolNames).toContain("call_actor");
-      expect(toolNames).toContain("call_scribe");
-      expect(toolNames).toContain("call_archivist");
-      expect(toolNames).toContain("clear_interaction_log");
+      expect(toolNames).toContain("submit_schedule");
       expect(toolNames).toContain("read_file");
       expect(toolNames).toContain("write_file");
       expect(toolNames).toContain("glob_files");
-      expect(toolNames.length).toBe(8);
+      expect(toolNames.length).toBe(4);
     });
 
     test("Actor agent has correct tools", () => {

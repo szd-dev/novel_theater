@@ -60,12 +60,29 @@ describe("getGMPrompt", () => {
     checkNoForbiddenPatterns(result, "GM");
   });
 
-  test("includes tool descriptions (call_actor, call_scribe, call_archivist)", () => {
+  test("includes submit_schedule tool description", () => {
     const state: GMPromptState = {};
     const result = getGMPrompt(state);
-    expect(result).toContain("call_actor");
-    expect(result).toContain("call_scribe");
-    expect(result).toContain("call_archivist");
+    expect(result).toContain("submit_schedule");
+    expect(result).toContain("schedule");
+    expect(result).toContain("narrativeSummary");
+  });
+
+  test("does not contain removed tool names", () => {
+    const state: GMPromptState = {};
+    const result = getGMPrompt(state);
+    expect(result).not.toContain("enact_sequence");
+    expect(result).not.toContain("call_scribe");
+    expect(result).not.toContain("call_archivist");
+    expect(result).not.toContain("call_actor");
+    expect(result).not.toContain("clear_interaction_log");
+  });
+
+  test("states GM only does Orient + Script", () => {
+    const state: GMPromptState = {};
+    const result = getGMPrompt(state);
+    expect(result).toContain("GM 的职责到此结束");
+    expect(result).toContain("系统自动执行后续流程");
   });
 
   test("no LangGraph references", () => {
@@ -86,13 +103,19 @@ describe("getGMPrompt", () => {
     expect(normal).toEqual(minimal);
   });
 
-  test("includes new four-stage flow names", () => {
+  test("includes three-stage flow names (Orient + Script + Submit)", () => {
     const state: GMPromptState = {};
     const result = getGMPrompt(state);
     expect(result).toContain("准备（Orient）");
     expect(result).toContain("场景编写（Script）");
-    expect(result).toContain("演绎调度（Enact）");
-    expect(result).toContain("收束（Resolve）");
+    expect(result).toContain("提交调度（Submit）");
+  });
+
+  test("does not contain removed stage names (Enact, Resolve)", () => {
+    const state: GMPromptState = {};
+    const result = getGMPrompt(state);
+    expect(result).not.toContain("演绎调度（Enact）");
+    expect(result).not.toContain("收束（Resolve）");
   });
 
   test("does not contain old stage names", () => {

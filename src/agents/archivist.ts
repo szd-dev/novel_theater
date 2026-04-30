@@ -5,6 +5,7 @@ import { resolveCharacterTool, listCharactersTool } from '@/tools/character-tool
 import { getArchivistPrompt } from '@/prompts/archivist';
 import { buildStoryContext } from '@/context/build-story-context';
 
+/** @deprecated Replaced by sub-agent factories in src/agents/archivist/factory.ts. Will be removed in next version. */
 export const archivistAgent = new Agent({
   name: 'Archivist',
   model: getModel('archivist'),

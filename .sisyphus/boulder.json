@@ -1,56 +1,59 @@
 {
-  "active_plan": "/data/novel_theater/.sisyphus/plans/lexical-chat-input.md",
-  "started_at": "2026-04-29T15:05:36.274Z",
+  "active_plan": "/Users/qihoo/codebase/github/novel_theater/.sisyphus/plans/pipeline-orchestration.md",
+  "started_at": "2026-04-30T09:28:26.567Z",
   "session_ids": [
-    "ses_22639d510ffe259MbjXtALdwxK",
-    "ses_2261e4e0bffexJp2g8l7ulPSd8",
-    "ses_2261e4e01ffefgEkCKZh8U3ck1",
-    "ses_2261e4cccffeuJbInF3FSN8AI9"
+    "ses_22248277cffeyIZLSK6ti2rQ5l"
   ],
   "session_origins": {
-    "ses_22639d510ffe259MbjXtALdwxK": "direct",
-    "ses_2261e4e0bffexJp2g8l7ulPSd8": "appended",
-    "ses_2261e4e01ffefgEkCKZh8U3ck1": "appended",
-    "ses_2261e4cccffeuJbInF3FSN8AI9": "appended"
+    "ses_22248277cffeyIZLSK6ti2rQ5l": "direct"
   },
-  "plan_name": "lexical-chat-input",
+  "plan_name": "pipeline-orchestration",
   "agent": "atlas",
   "task_sessions": {
     "todo:1": {
       "task_key": "todo:1",
       "task_label": "1",
-      "task_title": "安装 Lexical + beautiful-mentions 依赖",
-      "session_id": "ses_226383880ffefGMlJwVP8fzqkd",
+      "task_title": "流事件构造验证测试",
+      "session_id": "ses_22245ad82ffeCso5f1LXqxH92H",
       "agent": "Sisyphus-Junior",
       "category": "quick",
-      "updated_at": "2026-04-29T15:09:10.824Z"
+      "updated_at": "2026-04-30T09:44:37.555Z"
     },
-    "todo:3": {
-      "task_key": "todo:3",
-      "task_label": "3",
-      "task_title": "Lexical 编辑器核心组件",
-      "session_id": "ses_2262cd33dffe7D3XZFCWt4ezVI",
-      "agent": "Sisyphus-Junior",
-      "category": "deep",
-      "updated_at": "2026-04-29T15:28:05.079Z"
-    },
-    "todo:5": {
-      "task_key": "todo:5",
-      "task_label": "5",
-      "task_title": "page.tsx 集成 + SSR 处理",
-      "session_id": "ses_22622ebb5ffeU3E1JNkqGgJR7k",
+    "todo:7": {
+      "task_key": "todo:7",
+      "task_label": "7",
+      "task_title": "GM Prompt 重写",
+      "session_id": "ses_222326e00ffeNJLoEIbvXSJMfq",
       "agent": "Sisyphus-Junior",
       "category": "unspecified-high",
-      "updated_at": "2026-04-29T15:33:23.987Z"
+      "updated_at": "2026-04-30T09:56:36.623Z"
     },
-    "final-wave:f1": {
-      "task_key": "final-wave:f1",
-      "task_label": "F1",
-      "task_title": "**Plan Compliance Audit** — `oracle`",
-      "session_id": "ses_2261e4cccffeuJbInF3FSN8AI9",
+    "todo:9": {
+      "task_key": "todo:9",
+      "task_label": "9",
+      "task_title": "API 路由重构",
+      "session_id": "ses_2221b944cffeJjWpzmEV5ujRH7",
       "agent": "Sisyphus-Junior",
       "category": "unspecified-high",
-      "updated_at": "2026-04-29T15:58:03.988Z"
+      "updated_at": "2026-04-30T10:19:05.538Z"
+    },
+    "todo:10": {
+      "task_key": "todo:10",
+      "task_label": "10",
+      "task_title": "Registry 清理（移除旧工具 + prompt-logger）",
+      "session_id": "ses_222188fecffe3qZaP0qxhlvGF0",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-04-30T10:24:04.916Z"
+    },
+    "todo:11": {
+      "task_key": "todo:11",
+      "task_label": "11",
+      "task_title": "非场景请求集成测试",
+      "session_id": "ses_2220c4534ffermZXpULNtRxL0Q",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-04-30T10:36:59.328Z"
     }
   }
 }

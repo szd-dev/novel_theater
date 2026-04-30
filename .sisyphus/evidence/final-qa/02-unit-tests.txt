@@ -1,0 +1,140 @@
+bun test v1.3.9 (cf6cdbbb)
+
+tests/unit/pipeline/narrative-pipeline.test.ts:
+[Pipeline] Actor "A" failed: Actor A failed
+308 |     const scheduleItems = createScheduleItems(schedule, "summary");
+309 |     const gmStream = createMockGmStream([], scheduleItems as any);
+310 |     pipelineRunMock.mockResolvedValue(gmStream);
+311 | 
+312 |     callAgentRunMock
+313 |       .mockRejectedValueOnce(new Error("Actor A failed"))
+                                       ^
+error: Actor A failed
+      at <anonymous> (/Users/qihoo/codebase/github/novel_theater/tests/unit/pipeline/narrative-pipeline.test.ts:313:34)
+317 |       createSceneStream(testInput, testContext, createMockSession()),
+318 |     );
+319 | 
+320 |     const agentNames = extractAgentNames(events);
+321 |     const actorNames = agentNames.filter((n) => n === "Actor");
+322 |     expect(actorNames).toHaveLength(2);
+                             ^
+error: expect(received).toHaveLength(expected)
+
+Expected length: 2
+Received length: 3
+
+      at <anonymous> (/Users/qihoo/codebase/github/novel_theater/tests/unit/pipeline/narrative-pipeline.test.ts:322:24)
+(fail) createSceneStream > Actor failure: skip failed step, subsequent continue [0.91ms]
+[Pipeline] Scribe failed: undefined is not an object (evaluating 'result.finalOutput')
+[Pipeline] Archivist-Characters failed: undefined is not an object (evaluating 'result.finalOutput')
+[Pipeline] Archivist parallel (Scene/World/Plot/Timeline) failed: undefined is not an object (evaluating 'results[i].finalOutput')
+[Pipeline] Archivist-Debts failed: undefined is not an object (evaluating 'result.finalOutput')
+[Pipeline] Actor "A" failed: fail
+[Pipeline] Scribe failed: undefined is not an object (evaluating 'result.finalOutput')
+[Pipeline] Archivist-Characters failed: undefined is not an object (evaluating 'result.finalOutput')
+[Pipeline] Archivist parallel (Scene/World/Plot/Timeline) failed: undefined is not an object (evaluating 'results[i].finalOutput')
+[Pipeline] Archivist-Debts failed: undefined is not an object (evaluating 'result.finalOutput')
+442 |     const scheduleItems = createScheduleItems(schedule, "summary");
+443 |     const gmStream = createMockGmStream([], scheduleItems as any);
+444 |     pipelineRunMock.mockResolvedValue(gmStream);
+445 | 
+446 |     callAgentRunMock
+447 |       .mockRejectedValueOnce(new Error("fail"))
+                                       ^
+error: fail
+      at <anonymous> (/Users/qihoo/codebase/github/novel_theater/tests/unit/pipeline/narrative-pipeline.test.ts:447:34)
+(fail) createSceneStream > appendInteractionLog not called on Actor failure [0.36ms]
+
+tests/unit/lib/trace-exporter.test.ts:
+Span already started
+Span already started
+
+tests/unit/store/interaction-log.test.ts:
+21 | describe("appendInteractionLog", () => {
+22 |   test("creates .working/ directory and file on first append", () => {
+23 |     const dir = mkdtempSync(join(tmpdir(), "novel-ilog-append1-"));
+24 |     try {
+25 |       const result = appendInteractionLog(dir, "角色A", "你好世界");
+26 |       expect(result).toBe("✅ 交互记录已追加：第 1 条（角色A）");
+                          ^
+error: expect(received).toBe(expected)
+
+Expected: "✅ 交互记录已追加：第 1 条（角色A）"
+Received: undefined
+
+      at <anonymous> (/Users/qihoo/codebase/github/novel_theater/tests/unit/store/interaction-log.test.ts:26:22)
+(fail) appendInteractionLog > creates .working/ directory and file on first append [0.40ms]
+41 |   test("appends second entry with incremented number", () => {
+42 |     const dir = mkdtempSync(join(tmpdir(), "novel-ilog-append2-"));
+43 |     try {
+44 |       appendInteractionLog(dir, "角色A", "第一条");
+45 |       const result = appendInteractionLog(dir, "角色B", "第二条");
+46 |       expect(result).toBe("✅ 交互记录已追加：第 2 条（角色B）");
+                          ^
+error: expect(received).toBe(expected)
+
+Expected: "✅ 交互记录已追加：第 2 条（角色B）"
+Received: undefined
+
+      at <anonymous> (/Users/qihoo/codebase/github/novel_theater/tests/unit/store/interaction-log.test.ts:46:22)
+(fail) appendInteractionLog > appends second entry with incremented number [0.27ms]
+59 |     const dir = mkdtempSync(join(tmpdir(), "novel-ilog-append3-"));
+60 |     try {
+61 |       appendInteractionLog(dir, "角色A", "第一条");
+62 |       appendInteractionLog(dir, "角色B", "第二条");
+63 |       const result = appendInteractionLog(dir, "角色C", "第三条");
+64 |       expect(result).toBe("✅ 交互记录已追加：第 3 条（角色C）");
+                          ^
+error: expect(received).toBe(expected)
+
+Expected: "✅ 交互记录已追加：第 3 条（角色C）"
+Received: undefined
+
+      at <anonymous> (/Users/qihoo/codebase/github/novel_theater/tests/unit/store/interaction-log.test.ts:64:22)
+(fail) appendInteractionLog > appends multiple entries with correct sequential numbering [0.27ms]
+87 |   test("returns file content when log exists", () => {
+88 |     const dir = mkdtempSync(join(tmpdir(), "novel-ilog-read2-"));
+89 |     try {
+90 |       appendInteractionLog(dir, "角色A", "测试内容");
+91 |       const result = readInteractionLog(dir);
+92 |       expect(result).not.toBeNull();
+                              ^
+error: expect(received).not.toBeNull()
+
+Received: null
+
+      at <anonymous> (/Users/qihoo/codebase/github/novel_theater/tests/unit/store/interaction-log.test.ts:92:26)
+(fail) readInteractionLog > returns file content when log exists [0.26ms]
+101 | describe("clearInteractionLog", () => {
+102 |   test("returns info message when no log file exists", () => {
+103 |     const dir = mkdtempSync(join(tmpdir(), "novel-ilog-clear1-"));
+104 |     try {
+105 |       const result = clearInteractionLog(dir);
+106 |       expect(result).toBe("ℹ️ 无活跃的交互记录");
+                           ^
+error: expect(received).toBe(expected)
+
+Expected: "ℹ️ 无活跃的交互记录"
+Received: undefined
+
+      at <anonymous> (/Users/qihoo/codebase/github/novel_theater/tests/unit/store/interaction-log.test.ts:106:22)
+(fail) clearInteractionLog > returns info message when no log file exists [0.24ms]
+111 | 
+112 |   test("deletes the log file and returns success message", () => {
+113 |     const dir = mkdtempSync(join(tmpdir(), "novel-ilog-clear2-"));
+114 |     try {
+115 |       appendInteractionLog(dir, "角色A", "待清除");
+116 |       expect(existsSync(join(dir, ".working", "latest-interaction.md"))).toBe(true);
+                                                                               ^
+error: expect(received).toBe(expected)
+
+Expected: true
+Received: false
+
+      at <anonymous> (/Users/qihoo/codebase/github/novel_theater/tests/unit/store/interaction-log.test.ts:116:74)
+(fail) clearInteractionLog > deletes the log file and returns success message [0.25ms]
+
+ 256 pass
+ 8 fail
+ 682 expect() calls
+Ran 264 tests across 18 files. [258.00ms]

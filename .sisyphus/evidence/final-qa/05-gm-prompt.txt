@@ -1,0 +1,3 @@
+=== GM prompt verification ===
+submit_schedule count: 9
+old tools count: 0

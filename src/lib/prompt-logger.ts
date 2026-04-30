@@ -6,6 +6,8 @@ import type { CallModelInputFilter } from "@openai/agents";
  * Creates a callModelInputFilter that logs agent system prompts to JSONL
  * when DEBUG_PROMPTS environment variable is set.
  * Best-effort logging — never throws or blocks the agent run.
+ *
+ * @deprecated Replaced by ProjectTraceExporter. Will be removed in next version.
  */
 export function createPromptLogFilter(storyDir: string): CallModelInputFilter {
   return ({ modelData, agent }) => {

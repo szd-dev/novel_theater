@@ -1,0 +1,2 @@
+=== AgentName type check ===
+4:export type AgentName = 'Actor' | 'Scribe' | 'Archivist' | 'Archivist-Characters' | 'Archivist-Scene' | 'Archivist-World' | 'Archivist-Plot' | 'Archivist-Timeline' | 'Archivist-Debts';

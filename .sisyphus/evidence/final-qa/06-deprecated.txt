@@ -1,0 +1,5 @@
+=== Deprecated markers ===
+--- src/lib/prompt-logger.ts ---
+10: * @deprecated Replaced by ProjectTraceExporter. Will be removed in next version.
+--- src/agents/archivist.ts ---
+8:/** @deprecated Replaced by sub-agent factories in src/agents/archivist/factory.ts. Will be removed in next version. */

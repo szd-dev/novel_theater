@@ -1,14 +1,11 @@
 import { join } from 'node:path';
-import { run } from '@openai/agents';
-import { createAiSdkUiMessageStreamResponse } from '@openai/agents-extensions/ai-sdk-ui';
 import type { UIMessage } from 'ai';
 import { NextRequest, NextResponse } from 'next/server';
 
-import { gmAgent } from '@/agents/registry';
 import { getOrCreateStorySession } from '@/session/manager';
 import { readChatHistory, saveChatHistory } from '@/session/chat-history';
 import { getProject } from '@/project/manager';
-import { createPromptLogFilter } from '@/lib/prompt-logger';
+import { runScenePipeline } from '@/pipeline/narrative-pipeline';
 
 export const maxDuration = 60;
 
@@ -62,17 +59,14 @@ export async function POST(req: NextRequest) {
     }
 
     const streamStart = Date.now();
-    const stream = await run(gmAgent, input, {
-      stream: true,
-      context: { storyDir, projectId, projectDir },
-      maxTurns: 25,
-      session: storySession.gmSession,
-      callModelInputFilter: createPromptLogFilter(storyDir),
-      signal: req.signal,
-    });
-    console.log(`[API /narrative] Agent run started in ${Date.now() - streamStart}ms`);
+    const response = runScenePipeline(
+      { input, projectId, projectDir },
+      { storyDir },
+      storySession.gmSession,
+    );
+    console.log(`[API /narrative] Pipeline started in ${Date.now() - streamStart}ms`);
 
-    return createAiSdkUiMessageStreamResponse(stream);
+    return response;
   } catch (error) {
     if (req.signal.aborted) {
       console.log('[API /narrative] Request aborted after', Date.now() - startTime, 'ms');

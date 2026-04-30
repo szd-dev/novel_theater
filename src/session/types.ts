@@ -1,7 +1,7 @@
 import type { Session } from '@openai/agents';
 import type { ExecutionLog } from './execution-log';
 
-export type AgentName = 'Actor' | 'Scribe' | 'Archivist';
+export type AgentName = 'Actor' | 'Scribe' | 'Archivist' | 'Archivist-Characters' | 'Archivist-Scene' | 'Archivist-World' | 'Archivist-Plot' | 'Archivist-Timeline' | 'Archivist-Debts';
 
 export interface SubSessionEntry {
   sessionId: string;

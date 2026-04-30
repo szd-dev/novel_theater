@@ -1,0 +1,12 @@
+=== Structural Verification ===
+
+src/lib/trace-exporter.ts → ProjectTraceExporter: 1
+src/lib/trace-setup.ts → setupTracing: 1
+src/pipeline/call-agent.ts → callAgent: 2
+src/pipeline/call-agent.ts → callAgentsParallel: 1
+src/pipeline/call-agent.ts → forwardRun: 1
+src/pipeline/call-agent.ts → AgentCallConfig: 1
+src/pipeline/narrative-pipeline.ts → runScenePipeline: 1
+src/pipeline/narrative-pipeline.ts → extractScheduleFromResult: 1
+src/agents/archivist/factory.ts → factory functions: 6
+src/tools/submit-schedule.ts → submitScheduleTool: 1
