@@ -10,6 +10,7 @@ import {
   readDirectivesFile,
   archiveStory,
   resetStory,
+  globNovelFiles,
 } from "@/store/story-files";
 import { computeFileHash } from "@/lib/file-hash";
 import { TEMPLATES, SUBDIRS } from "@/lib/templates";
@@ -359,5 +360,90 @@ describe("readDirectivesFile", () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+});
+
+describe("globNovelFiles", () => {
+  test("returns paths with directory prefix for wildcard pattern", async () => {
+    const parentDir = mkdtempSync(join(tmpdir(), "novel-glob-"));
+    const dir = join(parentDir, ".novel");
+    try {
+      await initStory(dir);
+      await writeNovelFile(dir, "characters/角色A.md", "# 角色A\n> test");
+      await writeNovelFile(dir, "characters/角色B.md", "# 角色B\n> test");
+      await writeNovelFile(dir, "scenes/s001.md", "## 地点\n## 时间\n## 在场角色\n## 初始剧本\n## 经过");
+
+      const results = await globNovelFiles(dir, "characters/*.md");
+      expect(results).toContain("characters/角色A.md");
+      expect(results).toContain("characters/角色B.md");
+      expect(results).not.toContain("scenes/s001.md");
+      expect(results).toHaveLength(2);
+    } finally {
+      rmSync(parentDir, { recursive: true, force: true });
+    }
+  });
+
+  test("returns paths with directory prefix for non-wildcard pattern", async () => {
+    const parentDir = mkdtempSync(join(tmpdir(), "novel-glob2-"));
+    const dir = join(parentDir, ".novel");
+    try {
+      await initStory(dir);
+      await writeNovelFile(dir, "characters/角色A.md", "# 角色A\n> test");
+
+      const results = await globNovelFiles(dir, "characters");
+      expect(results).toContain("characters/角色A.md");
+      expect(results).toHaveLength(1);
+    } finally {
+      rmSync(parentDir, { recursive: true, force: true });
+    }
+  });
+
+  test("matches root .md files with simple wildcard", async () => {
+    const parentDir = mkdtempSync(join(tmpdir(), "novel-glob3-"));
+    const dir = join(parentDir, ".novel");
+    try {
+      await initStory(dir);
+
+      const results = await globNovelFiles(dir, "*.md");
+      expect(results).toContain("world.md");
+      expect(results).toContain("plot.md");
+    } finally {
+      rmSync(parentDir, { recursive: true, force: true });
+    }
+  });
+
+  test("returns empty array for non-matching pattern", async () => {
+    const parentDir = mkdtempSync(join(tmpdir(), "novel-glob4-"));
+    const dir = join(parentDir, ".novel");
+    try {
+      await initStory(dir);
+
+      const results = await globNovelFiles(dir, "nonexistent/*.md");
+      expect(results).toEqual([]);
+    } finally {
+      rmSync(parentDir, { recursive: true, force: true });
+    }
+  });
+
+  test("matches scenes files with wildcard", async () => {
+    const parentDir = mkdtempSync(join(tmpdir(), "novel-glob5-"));
+    const dir = join(parentDir, ".novel");
+    try {
+      await initStory(dir);
+      await writeNovelFile(dir, "scenes/s001.md", "## 地点\n## 时间\n## 在场角色\n## 初始剧本\n## 经过");
+      await writeNovelFile(dir, "scenes/s002.md", "## 地点\n## 时间\n## 在场角色\n## 初始剧本\n## 经过");
+
+      const results = await globNovelFiles(dir, "scenes/*.md");
+      expect(results).toContain("scenes/s001.md");
+      expect(results).toContain("scenes/s002.md");
+      expect(results).toHaveLength(2);
+    } finally {
+      rmSync(parentDir, { recursive: true, force: true });
+    }
+  });
+
+  test("returns empty array for non-existent directory", async () => {
+    const results = await globNovelFiles("/nonexistent/path", "*.md");
+    expect(results).toEqual([]);
   });
 });

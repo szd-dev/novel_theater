@@ -21,8 +21,8 @@ export async function GET(request: NextRequest) {
     let currentLocation = '';
     if (sceneFiles.length > 0) {
       const latestScene = sceneFiles[sceneFiles.length - 1];
-      currentSceneId = latestScene.replace('.md', '');
-      const sceneContent = await readNovelFile(storyDir, `scenes/${latestScene}`);
+      currentSceneId = latestScene.replace('scenes/', '').replace('.md', '');
+      const sceneContent = await readNovelFile(storyDir, latestScene);
       if (sceneContent) {
         const locationMatch = sceneContent.match(/## 地点\s*\n(.+)/);
         if (locationMatch) {
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     }
 
     const characterFiles = await globNovelFiles(storyDir, 'characters');
-    const characters = characterFiles.map((f) => f.replace('.md', ''));
+    const characters = characterFiles.map((f) => f.replace('characters/', '').replace('.md', ''));
 
     return NextResponse.json({
       success: true,

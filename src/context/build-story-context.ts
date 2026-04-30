@@ -87,8 +87,8 @@ export async function buildStoryContext(
 
   const charEntries = await globNovelFiles(dir, "characters");
   for (const entry of charEntries) {
-    const charName = entry.replace(".md", "");
-    const content = await readNovelFile(dir, `characters/${entry}`);
+    const charName = entry.replace("characters/", "").replace(".md", "");
+    const content = await readNovelFile(dir, entry);
     if (!content) continue;
     const l0 = extractL0(content);
     if (l0) allCharL0Map.set(charName, l0);

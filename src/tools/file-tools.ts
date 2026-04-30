@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { readNovelFile, writeNovelFile, globNovelFiles } from '@/store/story-files';
 import { toolResult, toolError } from '@/lib/tool-result';
 import { isSafePath, isValidCharacterFile, isValidSceneFile, isDirectivesPath, isAllowedFilePath } from '@/lib/validation';
+import { findAndReplace } from '@/lib/search-replace';
 import { findLatestScene } from '@/context/extract';
 
 export { isSafePath } from '@/lib/validation';
@@ -122,10 +123,11 @@ export const editFileTool = tool({
     if (content === null) {
       return toolError(`File not found: ${input.path}`);
     }
-    if (!content.includes(input.search)) {
-      return toolError(`Search string not found in ${input.path}`);
+    const matchResult = findAndReplace(content, input.search, input.replace);
+    if (!matchResult.success) {
+      return toolError(matchResult.error);
     }
-    const newContent = content.replace(input.search, input.replace);
+    const newContent = matchResult.result;
     if (input.path.startsWith('characters/') && !isValidCharacterFile(newContent)) {
       return toolError('Invalid character file content after edit. Character files must start with "# Name" heading and have a "> " L0 line.');
     }
@@ -133,7 +135,7 @@ export const editFileTool = tool({
       return toolError('Invalid scene file content after edit. Scene files must include sections: ## 地点, ## 时间, ## 在场角色, ## 初始剧本, ## 经过.');
     }
     await writeNovelFile(storyDir, input.path, newContent);
-    return toolResult(`Successfully edited ${input.path}`);
+    return toolResult(`Successfully edited ${input.path} (${matchResult.strategy})`);
   },
 });
 

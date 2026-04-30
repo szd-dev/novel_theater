@@ -174,10 +174,10 @@ export async function findLatestScene(dir: string): Promise<string | null> {
   if (entries.length === 0) return null;
 
   entries.sort((a, b) => {
-    const numA = parseInt(a, 10) || 0;
-    const numB = parseInt(b, 10) || 0;
+    const numA = parseInt(a.replace("scenes/", ""), 10) || 0;
+    const numB = parseInt(b.replace("scenes/", ""), 10) || 0;
     return numB - numA;
   });
 
-  return entries[0];
+  return entries[0].replace("scenes/", "");
 }

@@ -13,6 +13,7 @@ import {
   writeFile,
   readFile,
 } from "node:fs/promises";
+import { glob as tinyGlob } from "tinyglobby";
 import { TEMPLATES, SUBDIRS } from "@/lib/templates";
 import { isSafePath, isAllowedFilePath, isDirectivesPath } from "@/lib/validation";
 
@@ -248,41 +249,11 @@ export async function globNovelFiles(
   dir: string,
   pattern: string,
 ): Promise<string[]> {
-  const novelDir = dir;
-  if (!existsSync(novelDir)) {
-    return [];
+  if (!existsSync(dir)) return [];
+
+  if (!pattern.includes("*")) {
+    return tinyGlob(`${pattern}/*`, { cwd: dir, onlyFiles: true });
   }
 
-  // Simple glob: if pattern contains *, do recursive search; otherwise list subdirectory
-  const results: string[] = [];
-
-  if (pattern.includes("*")) {
-    const ext = pattern.replace("*", "");
-    const walk = (currentDir: string, prefix: string): void => {
-      const entries = readdirSync(currentDir, { withFileTypes: true });
-      for (const entry of entries) {
-        const relPath = prefix ? `${prefix}/${entry.name}` : entry.name;
-        if (entry.isDirectory()) {
-          walk(join(currentDir, entry.name), relPath);
-        } else if (entry.name.endsWith(ext)) {
-          results.push(relPath);
-        }
-      }
-    };
-    walk(novelDir, "");
-  } else {
-    // List files in a specific subdirectory
-    const targetDir = join(novelDir, pattern);
-    if (!existsSync(targetDir)) {
-      return [];
-    }
-    const entries = readdirSync(targetDir, { withFileTypes: true });
-    for (const entry of entries) {
-      if (entry.isFile()) {
-        results.push(entry.name);
-      }
-    }
-  }
-
-  return results.sort();
+  return tinyGlob(pattern, { cwd: dir, onlyFiles: true });
 }
