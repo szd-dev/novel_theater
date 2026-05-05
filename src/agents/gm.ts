@@ -4,7 +4,6 @@ import { getGMPrompt } from '@/prompts/gm';
 import { buildStoryContext } from '@/context/build-story-context';
 import { submitScheduleTool } from '@/tools/submit-schedule';
 import { readFileTool, writeFileTool, globFilesTool } from '@/tools/file-tools';
-import { resolveCharacterTool } from '@/tools/character-tools';
 
 export const gmAgent = new Agent({
   name: 'GM',
@@ -16,5 +15,5 @@ export const gmAgent = new Agent({
       storyContext: storyContext ?? undefined,
     });
   },
-  tools: [submitScheduleTool, readFileTool, writeFileTool, globFilesTool, resolveCharacterTool],
+  tools: [submitScheduleTool, readFileTool, writeFileTool, globFilesTool],
 });
