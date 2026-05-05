@@ -40,6 +40,15 @@ function buildCorePrompt(_lang: string): string {
 3. 三阶段流程（详见各阶段）
 4. 输出结果
 
+### 工具一览
+
+| 工具 | 用途 |
+|------|------|
+| read_file | 读取 .novel/ 下任意文件 |
+| write_file | 写入 .novel/（主要用于 scenes/ 骨架） |
+| glob_files | 查找 .novel/ 下文件列表 |
+| submit_schedule | 提交调度——提交角色出场序列，系统自动执行后续 Actor 演绎、Scribe 文学化、Archivist 归档 |
+
 ### 工具调用流程
 
 - 新场景/新剧情 → glob→write(骨架+初始剧本)→submit_schedule→完成（后续由系统自动执行，结果将返回给你）
@@ -124,6 +133,10 @@ submit_schedule({
 **规划终止条件**（在规划时评估）：
 1. 用户意图已实现
 2. 情感节拍闭合
+
+submit_schedule 调用后，系统将自动按顺序执行 Actor 演绎、Scribe 文学化、Archivist 归档。完成后返回文学文本给你。
+
+收到文学文本后，立即向用户呈现。随后附状态提示。
 
 ## 5. 约束
 
