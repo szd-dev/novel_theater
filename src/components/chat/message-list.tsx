@@ -7,6 +7,7 @@ import { isDynamicToolPart } from "@/components/chat/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageItem } from "@/components/chat/message-item";
 import { ProgressIndicator } from "@/components/chat/progress-indicator";
+import { PipelineProgress } from "@/components/chat/pipeline-progress";
 import { TOOL_STEP_MAP } from "@/components/chat/tool-meta";
 import { Button } from "@/components/ui/button";
 
@@ -25,17 +26,35 @@ function deriveProgress(messages: UIMessage[], status: ChatStatus) {
   return { currentStep: latestStep, isThinking: status === "submitted" };
 }
 
+function deriveSubmitScheduleActive(messages: UIMessage[]): boolean {
+  for (const msg of messages) {
+    for (const part of msg.parts) {
+      if (
+        isDynamicToolPart(part) &&
+        part.toolName === "submit_schedule" &&
+        part.state !== "output-available" &&
+        part.state !== "output-error"
+      ) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 interface MessageListProps {
   messages: UIMessage[];
   status: ChatStatus;
+  projectId: string;
   onToolClick?: (tool: ToolClickPayload) => void;
   error?: Error;
   onClearError?: () => void;
 }
 
-export function MessageList({ messages, status, onToolClick, error, onClearError }: MessageListProps) {
+export function MessageList({ messages, status, projectId, onToolClick, error, onClearError }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const { currentStep, isThinking } = deriveProgress(messages, status);
+  const isSubmitScheduleActive = deriveSubmitScheduleActive(messages);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -58,6 +77,7 @@ export function MessageList({ messages, status, onToolClick, error, onClearError
           {messages.map((message) => (
             <MessageItem key={message.id} message={message} onToolClick={onToolClick} />
           ))}
+          <PipelineProgress projectId={projectId} isActive={isSubmitScheduleActive} />
           {(status === "submitted" || status === "streaming") && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <ProgressIndicator currentStep={currentStep} isThinking={isThinking} />
