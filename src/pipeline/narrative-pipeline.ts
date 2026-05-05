@@ -179,7 +179,7 @@ async function* enactPhase(
 async function* scribePhase(
   narrativeSummary: string,
   storyDir: string,
-): AsyncGenerator<RunStreamEvent> {
+): AsyncGenerator<RunStreamEvent, string> {
   const startTime = Date.now();
   console.log(`[Pipeline] Scribe starting`);
   let scribeCall: ReturnType<typeof callAgent> | undefined;
@@ -199,6 +199,7 @@ async function* scribePhase(
     const literaryText = String(scribeResult.finalOutput ?? "");
 
     yield* archivistDagPhase(narrativeSummary, literaryText, storyDir);
+    return literaryText;
   } catch (error) {
     scribeCall?.result.catch(() => {});
     console.error(
@@ -206,7 +207,39 @@ async function* scribePhase(
       error instanceof Error ? error.message : String(error),
     );
     yield* archivistDagPhase(narrativeSummary, "", storyDir);
+    return "";
   }
+}
+
+async function* gmOutputPhase(
+  scribeOutput: string,
+  storyDir: string,
+  projectId: string,
+  projectDir: string,
+  gmSession: Session,
+): AsyncGenerator<RunStreamEvent> {
+  const startTime = Date.now();
+  console.log(`[Pipeline] GM output phase starting`);
+
+  const gmStream = await _run(
+    gmAgent,
+    scribeOutput,
+    {
+      stream: true,
+      context: { storyDir, projectId, projectDir },
+      maxTurns: 1,
+      session: gmSession,
+      traceMetadata: { storyDir, projectId },
+    } as Parameters<typeof _run>[2],
+  ) as StreamedRunResult<any, any>;
+
+  for await (const event of forwardRun(gmStream)) {
+    yield event;
+  }
+
+  await gmStream.completed;
+  const gmResult = gmStream as unknown as AnyRunResult;
+  logAgentResult('GM-Output', gmResult, startTime);
 }
 
 async function* archivistDagPhase(
@@ -306,9 +339,13 @@ export async function* createSceneStream(
 
   yield* enactPhase(schedule, storyDir, projectId, projectDir);
 
-  yield* scribePhase(narrativeSummary, storyDir);
+  const scribeOutput = yield* scribePhase(narrativeSummary, storyDir);
 
   clearInteractionLog(storyDir);
+
+  if (scribeOutput) {
+    yield* gmOutputPhase(scribeOutput, storyDir, projectId, projectDir, gmSession);
+  }
 }
 
 export function runScenePipeline(

@@ -42,7 +42,7 @@ function buildCorePrompt(_lang: string): string {
 
 ### 工具调用流程
 
-- 新场景/新剧情 → glob→write(骨架+初始剧本)→submit_schedule→完成（后续由系统自动执行）
+- 新场景/新剧情 → glob→write(骨架+初始剧本)→submit_schedule→完成（后续由系统自动执行，结果将返回给你）
 - 其它指令 → 自行处理
 
 ## 3. 场景骨架
@@ -143,6 +143,8 @@ submit_schedule({
 ## 7. 输出规范
 
 在输出文本时只返回 Scribe 的文学文本。不含工具调用记录/Actor骨架/AI助手式表述。
+
+调用 submit_schedule 后，只需简短确认（如"调度已提交"），不要输出叙事内容。系统会自动执行调度并将文学文本返回给你。
 
 场景结束后附状态提示：
 📍 {地点} | ⏰ {时间} | 📋 场景 sXXX

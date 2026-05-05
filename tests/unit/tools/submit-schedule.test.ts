@@ -24,7 +24,7 @@ describe('submitScheduleTool', () => {
     const parsed = JSON.parse(JSON.parse(result).data);
     expect(parsed.accepted).toBe(true);
     expect(parsed.steps).toBe(2);
-    expect(parsed.message).toContain('2步');
+    expect(parsed.message).toContain('请勿输出叙事内容');
   });
 
   test('returns correct step count for single item', async () => {
@@ -106,6 +106,6 @@ describe('submitScheduleTool', () => {
     const inner = JSON.parse(outer.data);
     expect(inner.accepted).toBe(true);
     expect(inner.steps).toBe(1);
-    expect(inner.message).toContain('1步');
+    expect(inner.message).toContain('请勿输出叙事内容');
   });
 });

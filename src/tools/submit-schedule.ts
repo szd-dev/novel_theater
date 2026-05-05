@@ -24,7 +24,7 @@ export const submitScheduleTool = tool({
       JSON.stringify({
         accepted: true,
         steps: input.schedule.length,
-        message: `调度计划已提交（${input.schedule.length}步），系统将自动执行后续流程`,
+        message: `调度已提交，系统正在执行。请勿输出叙事内容，等待执行结果返回。`,
       }),
     );
   },

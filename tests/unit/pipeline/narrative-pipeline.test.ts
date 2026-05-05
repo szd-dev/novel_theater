@@ -241,7 +241,7 @@ describe("createSceneStream", () => {
     expect(mockClearInteractionLog).not.toHaveBeenCalled();
   });
 
-  test("scene request: event order is GM → Actor(s) → Scribe → Archivist-Characters → [Scene∥World∥Plot∥Timeline] → Debts", async () => {
+  test("scene request: event order is GM → Actor(s) → Scribe → Archivist-Characters → [Scene∥World∥Plot∥Timeline] → Debts → GM(output)", async () => {
     const schedule = [
       { character: "林冲", direction: "与鲁智深对话" },
       { character: "鲁智深", direction: "回应林冲" },
@@ -285,6 +285,9 @@ describe("createSceneStream", () => {
     expect(debtsIndex).toBeGreaterThan(worldIndex);
     expect(debtsIndex).toBeGreaterThan(plotIndex);
     expect(debtsIndex).toBeGreaterThan(timelineIndex);
+
+    expect(pipelineRunMock).toHaveBeenCalledTimes(2);
+    expect((pipelineRunMock.mock.calls[1][2] as any).maxTurns).toBe(1);
   });
 
   test("Actor failure: skip failed step, subsequent continue", async () => {
@@ -445,5 +448,42 @@ describe("createSceneStream", () => {
 
     expect(charIdx).toBeLessThan(sceneIdx);
     expect(debtsIdx).toBeGreaterThan(charIdx);
+  });
+
+  test("GM output phase uses same session as GM phase", async () => {
+    const schedule = [{ character: "A", direction: "act" }];
+    const scheduleItems = createScheduleItems(schedule, "summary");
+    const gmStream = createMockGmStream([], scheduleItems as any);
+    pipelineRunMock.mockResolvedValue(gmStream);
+    callAgentRunMock.mockResolvedValue(createMockRunResult("sub-agent output"));
+
+    const gmSession = createMockSession();
+    await collectStreamEvents(
+      createSceneStream(testInput, testContext, gmSession),
+    );
+
+    expect(pipelineRunMock).toHaveBeenCalledTimes(2);
+    const firstCallSession = (pipelineRunMock.mock.calls[0][2] as any).session;
+    const secondCallSession = (pipelineRunMock.mock.calls[1][2] as any).session;
+    expect(firstCallSession).toBe(gmSession);
+    expect(secondCallSession).toBe(gmSession);
+  });
+
+  test("GM output phase not called when scribeOutput is empty", async () => {
+    const schedule = [{ character: "A", direction: "act" }];
+    const scheduleItems = createScheduleItems(schedule, "summary");
+    const gmStream = createMockGmStream([], scheduleItems as any);
+    pipelineRunMock.mockResolvedValue(gmStream);
+
+    callAgentRunMock
+      .mockResolvedValueOnce(createMockRunResult("actor output"))
+      .mockResolvedValueOnce(createMockRunResult(""))
+      .mockResolvedValue(createMockRunResult("archivist output"));
+
+    await collectStreamEvents(
+      createSceneStream(testInput, testContext, createMockSession()),
+    );
+
+    expect(pipelineRunMock).toHaveBeenCalledTimes(1);
   });
 });
