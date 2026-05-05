@@ -5,24 +5,22 @@ import type { UIMessage } from "ai";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { AgentLabel } from "@/components/chat/agent-label";
-import { ToolTag, type DynamicToolState } from "@/components/chat/tool-tag";
+import { ToolTag } from "@/components/chat/tool-tag";
 import { splitBySteps } from "@/components/chat/message-segments";
 import { toolNameToAgentKey } from "@/components/chat/tool-meta";
+import { isDynamicToolPart, type ToolClickPayload } from "@/components/chat/types";
 
 interface MessageItemProps {
   message: UIMessage;
-  onToolClick?: (tool: { toolName: string; input?: Record<string, unknown>; output?: string; error?: string; state?: DynamicToolState }) => void;
+  onToolClick?: (tool: ToolClickPayload) => void;
 }
 
 function extractAgentLabel(message: UIMessage): string | null {
   for (const part of message.parts) {
-    if (part.type === "dynamic-tool") {
-      const toolName = (part as { toolName?: string }).toolName;
-      if (toolName) {
-        const key = toolNameToAgentKey(toolName);
-        if (key !== "gm") {
-          return key.charAt(0).toUpperCase() + key.slice(1);
-        }
+    if (isDynamicToolPart(part) && part.toolName) {
+      const key = toolNameToAgentKey(part.toolName);
+      if (key !== "gm") {
+        return key.charAt(0).toUpperCase() + key.slice(1);
       }
     }
   }
@@ -42,13 +40,7 @@ interface SeparatedParts {
 
 function separateParts(
   parts: UIMessage["parts"],
-  onToolClick?: (tool: {
-    toolName: string;
-    input?: Record<string, unknown>;
-    output?: string;
-    error?: string;
-    state?: DynamicToolState;
-  }) => void
+  onToolClick?: (tool: ToolClickPayload) => void
 ): SeparatedParts {
   const textParts: ReactElement[] = [];
   const toolParts: ReactElement[] = [];
@@ -62,30 +54,22 @@ function separateParts(
           {text}
         </span>
       );
-    } else if (part.type === "dynamic-tool") {
-      const dp = part as {
-        toolName?: string;
-        state?: DynamicToolState;
-        input?: Record<string, unknown>;
-        output?: string;
-        error?: string;
-        toolCallId?: string;
-      };
+    } else if (isDynamicToolPart(part)) {
       toolParts.push(
         <ToolTag
-          key={dp.toolCallId ?? `tool-${i}`}
-          toolName={dp.toolName ?? ""}
-          state={dp.state ?? "input-streaming"}
-          input={dp.input}
+          key={part.toolCallId ?? `tool-${i}`}
+          toolName={part.toolName ?? ""}
+          state={part.state ?? "input-streaming"}
+          input={part.input}
           onClick={
             onToolClick
               ? () =>
                   onToolClick({
-                    toolName: dp.toolName ?? "",
-                    input: dp.input,
-                    output: dp.output,
-                    error: dp.error,
-                    state: dp.state,
+                    toolName: part.toolName ?? "",
+                    input: part.input,
+                    output: part.output,
+                    error: part.error,
+                    state: part.state,
                   })
               : () => {}
           }

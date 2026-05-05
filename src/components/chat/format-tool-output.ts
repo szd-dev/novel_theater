@@ -4,8 +4,8 @@ export interface FormattedOutput {
   kind: "text" | "code" | "file-list" | "success" | "error" | "agent-result";
   content: string;
   metadata?: Record<string, string>;
-  items?: string[]; // entries for file-list kind
-  language?: string; // syntax hint for code kind (e.g., "markdown", "json")
+  items?: string[];
+  language?: string;
 }
 
 export interface ParsedToolOutput {
@@ -41,17 +41,23 @@ export function extractDisplayData(toolName: string, parsed: ParsedToolOutput): 
   return parsed.data;
 }
 
-
 export function formatToolOutput(toolName: string, rawOutput: string): FormattedOutput {
   const meta = TOOL_META_MAP[toolName];
   const category = meta?.category ?? "system";
   const parsed = parseToolOutput(rawOutput);
 
-  if (!parsed || !parsed.ok) {
-    return {
-      kind: "error",
-      content: parsed?.error ?? "未知错误",
-    };
+  if (!parsed) {
+    if (category === "agent") {
+      return { kind: "agent-result", content: rawOutput };
+    }
+    if (rawOutput.startsWith("Error: ")) {
+      return { kind: "error", content: rawOutput.slice(7) };
+    }
+    return { kind: "text", content: rawOutput };
+  }
+
+  if (!parsed.ok) {
+    return { kind: "error", content: parsed.error ?? "未知错误" };
   }
 
   switch (category) {
@@ -69,10 +75,6 @@ export function formatToolOutput(toolName: string, rawOutput: string): Formatted
 }
 
 function formatAgentOutput(toolName: string, parsed: ParsedToolOutput): FormattedOutput {
-  if (toolName === "enact_sequence") {
-    return formatEnactSequenceOutput(parsed);
-  }
-
   const displayData = extractDisplayData(toolName, parsed);
   const metadata: Record<string, string> = {};
 
@@ -94,7 +96,7 @@ function formatFileOutput(toolName: string, parsed: ParsedToolOutput): Formatted
     return {
       kind: "code",
       content: parsed.data ?? "",
-      language: "markdown", // .novel files are markdown
+      language: "markdown",
     };
   }
 
@@ -107,7 +109,7 @@ function formatFileOutput(toolName: string, parsed: ParsedToolOutput): Formatted
     };
   }
 
-  if (toolName === "write_file" || toolName === "edit_file") {
+  if (toolName === "write_file") {
     return {
       kind: "success",
       content: "文件操作成功",
@@ -125,44 +127,10 @@ function formatCharacterOutput(toolName: string, parsed: ParsedToolOutput): Form
     };
   }
 
-  if (toolName === "list_characters") {
-    const files = (parsed.data ?? "").split("\n").filter(Boolean);
-    return {
-      kind: "file-list",
-      content: parsed.data ?? "",
-      items: files,
-    };
-  }
-
   return { kind: "text", content: parsed.data ?? "" };
 }
 
-function formatEnactSequenceOutput(parsed: ParsedToolOutput): FormattedOutput {
-  const metadata: Record<string, string> = {};
-  let steps: Array<{ character: string; status: string; error?: string }> = [];
-
-  try {
-    const inner = JSON.parse(parsed.data ?? "");
-    steps = inner.steps ?? [];
-    if (inner.message) metadata["摘要"] = inner.message;
-  } catch {}
-
-  const content = steps
-    .map((s, i) => {
-      const icon = s.status === "success" ? "✅" : "❌";
-      const err = s.error ? ` — ${s.error}` : "";
-      return `${i + 1}. ${icon} ${s.character}${err}`;
-    })
-    .join("\n");
-
-  return {
-    kind: "agent-result",
-    content,
-    metadata: Object.keys(metadata).length > 0 ? metadata : undefined,
-  };
-}
-
-function formatSystemOutput(_toolName: string, parsed: ParsedToolOutput): FormattedOutput {
+function formatSystemOutput(toolName: string, parsed: ParsedToolOutput): FormattedOutput {
   return {
     kind: "success",
     content: parsed.data ?? "操作完成",

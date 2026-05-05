@@ -1,5 +1,6 @@
 import type { UIMessage } from "ai";
 import { toolNameToAgentKey, type AgentKey } from "@/components/chat/tool-meta";
+import { isDynamicToolPart } from "@/components/chat/types";
 
 export interface Segment {
   agent: AgentKey;
@@ -21,11 +22,8 @@ export function splitBySteps(message: UIMessage): Segment[] {
       continue;
     }
 
-    if (part.type === "dynamic-tool") {
-      const dp = part as { toolName?: string };
-      if (dp.toolName) {
-        currentAgent = toolNameToAgentKey(dp.toolName);
-      }
+    if (isDynamicToolPart(part) && part.toolName) {
+      currentAgent = toolNameToAgentKey(part.toolName);
     }
 
     currentParts.push(part);

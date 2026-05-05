@@ -14,12 +14,13 @@ import {
   Sheet,
   SheetContent as SheetContentUI,
 } from "@/components/ui/sheet";
-import { ToolDetailContent, type DynamicToolState } from "@/components/chat/tool-detail-sheet";
+import { ToolDetailContent } from "@/components/chat/tool-detail-sheet";
+import type { ToolClickPayload } from "@/components/chat/types";
 import { FileEditorSheet } from "@/components/chat/file-editor-sheet";
 import { cn } from "@/lib/utils";
 
 type SheetContent =
-  | { kind: "tool-detail"; toolName: string; input?: Record<string, unknown>; output?: string; error?: string; state?: DynamicToolState }
+  | { kind: "tool-detail"; toolName: string; input?: Record<string, unknown>; output?: string; error?: string; state?: ToolClickPayload["state"] }
   | { kind: "file-editor"; filePath: string; projectId: string }
   | null;
 
@@ -33,7 +34,7 @@ function ProjectChat({ projectId, onProjectSelect }: ProjectChatProps) {
   const fileTreeRef = useRef<StoryFileTreeRef>(null);
 
   const handleToolClick = useCallback(
-    (tool: { toolName: string; input?: Record<string, unknown>; output?: string; error?: string; state?: DynamicToolState }) => {
+    (tool: ToolClickPayload) => {
       setSheetContent({ kind: "tool-detail", ...tool });
     },
     [],

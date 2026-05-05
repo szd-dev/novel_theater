@@ -24,31 +24,8 @@ export const AGENT_NAMES = {
   archivist: "场记",
 } as const;
 
-export const AGENT_KEY_MAP: Record<string, AgentKey> = {
-  Actor: "actor",
-  Scribe: "scribe",
-  Archivist: "archivist",
-  GM: "gm",
-  "archivist-characters": "archivist",
-  "archivist-scene": "archivist",
-  "archivist-world": "archivist",
-  "archivist-plot": "archivist",
-  "archivist-timeline": "archivist",
-  "archivist-debts": "archivist",
-};
-
 export const TOOL_STEP_MAP: Record<string, number> = {
   submit_schedule: 0,
-  call_actor: 1,
-  enact_sequence: 1,
-  call_scribe: 2,
-  call_archivist: 3,
-  call_archivist_characters: 3,
-  call_archivist_scene: 3,
-  call_archivist_world: 3,
-  call_archivist_plot: 3,
-  call_archivist_timeline: 3,
-  call_archivist_debts: 3,
   Actor: 1,
   Scribe: 2,
   "archivist-characters": 3,
@@ -59,36 +36,7 @@ export const TOOL_STEP_MAP: Record<string, number> = {
   "archivist-debts": 3,
 };
 
-export const AGENT_TOOLS = new Set(["call_actor", "call_scribe", "call_archivist", "call_archivist_characters", "call_archivist_scene", "call_archivist_world", "call_archivist_plot", "call_archivist_timeline", "call_archivist_debts", "enact_sequence", "submit_schedule", "Actor", "Scribe", "archivist-characters", "archivist-scene", "archivist-world", "archivist-plot", "archivist-timeline", "archivist-debts"]);
-
 export const TOOL_META_MAP: Record<string, ToolMeta> = {
-  call_actor: {
-    toolName: "call_actor",
-    agentKey: "actor",
-    label: "演员",
-    color: "#EC4899",
-    icon: "🎭",
-    headlineParam: "character",
-    category: "agent",
-  },
-  call_scribe: {
-    toolName: "call_scribe",
-    agentKey: "scribe",
-    label: "书记",
-    color: "#F59E0B",
-    icon: "📝",
-    headlineParam: "sceneContext",
-    category: "agent",
-  },
-  call_archivist: {
-    toolName: "call_archivist",
-    agentKey: "archivist",
-    label: "场记",
-    color: "#10B981",
-    icon: "📋",
-    headlineParam: "narrativeSummary",
-    category: "agent",
-  },
   submit_schedule: {
     toolName: "submit_schedule",
     agentKey: "gm",
@@ -97,60 +45,6 @@ export const TOOL_META_MAP: Record<string, ToolMeta> = {
     icon: "📅",
     headlineParam: "schedule",
     category: "system",
-  },
-  call_archivist_characters: {
-    toolName: "call_archivist_characters",
-    agentKey: "archivist",
-    label: "角色",
-    color: "#10B981",
-    icon: "👤",
-    headlineParam: "narrativeSummary",
-    category: "agent",
-  },
-  call_archivist_scene: {
-    toolName: "call_archivist_scene",
-    agentKey: "archivist",
-    label: "场景",
-    color: "#10B981",
-    icon: "🎬",
-    headlineParam: "narrativeSummary",
-    category: "agent",
-  },
-  call_archivist_world: {
-    toolName: "call_archivist_world",
-    agentKey: "archivist",
-    label: "世界",
-    color: "#10B981",
-    icon: "🌍",
-    headlineParam: "narrativeSummary",
-    category: "agent",
-  },
-  call_archivist_plot: {
-    toolName: "call_archivist_plot",
-    agentKey: "archivist",
-    label: "剧情",
-    color: "#10B981",
-    icon: "📖",
-    headlineParam: "narrativeSummary",
-    category: "agent",
-  },
-  call_archivist_timeline: {
-    toolName: "call_archivist_timeline",
-    agentKey: "archivist",
-    label: "时间线",
-    color: "#10B981",
-    icon: "⏳",
-    headlineParam: "narrativeSummary",
-    category: "agent",
-  },
-  call_archivist_debts: {
-    toolName: "call_archivist_debts",
-    agentKey: "archivist",
-    label: "伏笔",
-    color: "#10B981",
-    icon: "🔗",
-    headlineParam: "narrativeSummary",
-    category: "agent",
   },
   read_file: {
     toolName: "read_file",
@@ -167,15 +61,6 @@ export const TOOL_META_MAP: Record<string, ToolMeta> = {
     label: "写入",
     color: "#6B7280",
     icon: "✏️",
-    headlineParam: "path",
-    category: "file",
-  },
-  edit_file: {
-    toolName: "edit_file",
-    agentKey: "gm",
-    label: "编辑",
-    color: "#6B7280",
-    icon: "🔧",
     headlineParam: "path",
     category: "file",
   },
@@ -196,39 +81,6 @@ export const TOOL_META_MAP: Record<string, ToolMeta> = {
     icon: "👤",
     headlineParam: "name",
     category: "character",
-  },
-  list_characters: {
-    toolName: "list_characters",
-    agentKey: "gm",
-    label: "列出角色",
-    color: "#6B7280",
-    icon: "👥",
-    category: "character",
-  },
-  clear_interaction_log: {
-    toolName: "clear_interaction_log",
-    agentKey: "gm",
-    label: "清除记录",
-    color: "#8B5CF6",
-    icon: "🗑️",
-    category: "system",
-  },
-  reset_story: {
-    toolName: "reset_story",
-    agentKey: "gm",
-    label: "重置故事",
-    color: "#EF4444",
-    icon: "⚠️",
-    category: "system",
-  },
-  enact_sequence: {
-    toolName: "enact_sequence",
-    agentKey: "actor",
-    label: "序列演绎",
-    color: "#EC4899",
-    icon: "🎬",
-    headlineParam: "schedule",
-    category: "agent",
   },
   Actor: {
     toolName: "Actor",
@@ -296,6 +148,12 @@ export const TOOL_META_MAP: Record<string, ToolMeta> = {
   },
 };
 
+export const AGENT_TOOLS = new Set(
+  Object.values(TOOL_META_MAP)
+    .filter(m => m.category === "agent")
+    .map(m => m.toolName),
+);
+
 const DEFAULT_META: ToolMeta = {
   toolName: "unknown",
   agentKey: "gm",
@@ -315,7 +173,6 @@ export function getHeadlineValue(toolName: string, input: Record<string, unknown
   const value = input[meta.headlineParam];
   if (value === undefined || value === null) return "";
 
-  // Special handling for schedule array: extract character names
   if (meta.headlineParam === "schedule" && Array.isArray(value)) {
     const names = value
       .map((s: { character?: string }) => s.character ?? "")

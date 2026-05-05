@@ -1,6 +1,7 @@
 "use client";
 
 import { getToolMeta } from "@/components/chat/tool-meta";
+import type { DynamicToolState } from "@/components/chat/types";
 import {
   formatToolOutput,
   type FormattedOutput,
@@ -13,12 +14,6 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-
-export type DynamicToolState =
-  | "input-streaming"
-  | "input-available"
-  | "output-available"
-  | "output-error";
 
 interface ToolDetailContentProps {
   toolName: string;

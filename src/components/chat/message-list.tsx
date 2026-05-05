@@ -2,7 +2,8 @@
 
 import { useEffect, useRef } from "react";
 import type { UIMessage, ChatStatus } from "ai";
-import type { DynamicToolState } from "@/components/chat/tool-detail-sheet";
+import type { ToolClickPayload } from "@/components/chat/types";
+import { isDynamicToolPart } from "@/components/chat/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageItem } from "@/components/chat/message-item";
 import { ProgressIndicator } from "@/components/chat/progress-indicator";
@@ -16,11 +17,8 @@ function deriveProgress(messages: UIMessage[], status: ChatStatus) {
   let latestStep: number | undefined;
   for (const msg of messages) {
     for (const part of msg.parts) {
-      if (part.type === "dynamic-tool") {
-        const toolName = (part as { toolName?: string }).toolName;
-        if (toolName && toolName in TOOL_STEP_MAP) {
-          latestStep = TOOL_STEP_MAP[toolName];
-        }
+      if (isDynamicToolPart(part) && part.toolName && part.toolName in TOOL_STEP_MAP) {
+        latestStep = TOOL_STEP_MAP[part.toolName];
       }
     }
   }
@@ -30,7 +28,7 @@ function deriveProgress(messages: UIMessage[], status: ChatStatus) {
 interface MessageListProps {
   messages: UIMessage[];
   status: ChatStatus;
-  onToolClick?: (tool: { toolName: string; input?: Record<string, unknown>; output?: string; error?: string; state?: DynamicToolState }) => void;
+  onToolClick?: (tool: ToolClickPayload) => void;
   error?: Error;
   onClearError?: () => void;
 }

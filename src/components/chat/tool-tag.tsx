@@ -2,6 +2,7 @@
 
 import { getToolMeta, getHeadlineValue } from "@/components/chat/tool-meta";
 import type { AgentKey } from "@/components/chat/tool-meta";
+import type { DynamicToolState } from "@/components/chat/types";
 import {
   Tooltip,
   TooltipContent,
@@ -9,12 +10,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-
-export type DynamicToolState =
-  | "input-streaming"
-  | "input-available"
-  | "output-available"
-  | "output-error";
 
 interface ToolTagProps {
   toolName: string;
@@ -105,5 +100,3 @@ export function ToolTag({ toolName, state, input, onClick }: ToolTagProps) {
     </TooltipProvider>
   );
 }
-
-export { type AgentKey };
