@@ -89,8 +89,8 @@ function extractEntry(span: Span<SpanData>): TraceLogEntry | null {
       return {
         ...base,
         agent: funcData.name,
-        input: funcData.input,
-        output: funcData.output,
+        input: truncateForLog(funcData.input),
+        output: truncateForLog(funcData.output),
       };
     }
     default:
@@ -98,10 +98,23 @@ function extractEntry(span: Span<SpanData>): TraceLogEntry | null {
   }
 }
 
-function ensureLogPath(storyDir: string): string {
+function ensureLogPath(storyDir: string): string | null {
   const workingDir = join(storyDir, ".working");
-  mkdirSync(workingDir, { recursive: true });
+  try {
+    mkdirSync(workingDir, { recursive: true });
+  } catch {
+    return null;
+  }
   return join(workingDir, "agent-logs.jsonl");
+}
+
+const MAX_LOG_LENGTH = 3000;
+
+function truncateForLog(value: unknown): unknown {
+  if (typeof value === "string" && value.length >= MAX_LOG_LENGTH) {
+    return value.slice(0, 2900) + ` ... (truncated at ${MAX_LOG_LENGTH})`;
+  }
+  return value;
 }
 
 export class ProjectTraceExporter implements TracingExporter {
@@ -128,6 +141,8 @@ export class ProjectTraceExporter implements TracingExporter {
 
       for (const [storyDir, spans] of byStoryDir) {
         const logPath = ensureLogPath(storyDir);
+        if (!logPath) continue;
+
         const lines: string[] = [];
 
         for (const span of spans) {

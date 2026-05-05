@@ -32,7 +32,12 @@ export interface AgentCall {
 
 function buildRunOptions(config: AgentCallConfig): Record<string, unknown> {
   const options: Record<string, unknown> = { maxTurns: 25, ...config.runOptions };
-  if (config.context) options.context = config.context;
+  if (config.context) {
+    options.context = config.context;
+    if (config.context.storyDir) {
+      options.traceMetadata = { storyDir: config.context.storyDir, ...(config.runOptions?.traceMetadata as Record<string, string> ?? {}) };
+    }
+  }
   if (config.session) options.session = config.session;
   return options;
 }

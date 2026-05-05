@@ -92,13 +92,13 @@ export function extractScheduleMeta(gmResult: AnyRunResult): string {
   return data?.narrativeSummary ?? "";
 }
 
-async function runGmPhase(
+async function* gmPhase(
   input: string,
   storyDir: string,
   projectId: string,
   projectDir: string,
   gmSession: Session,
-): Promise<{ events: RunStreamEvent[]; gmResult: AnyRunResult }> {
+): AsyncGenerator<RunStreamEvent, AnyRunResult> {
   const startTime = Date.now();
   console.log(`[Pipeline] GM starting, input: "${input.slice(0, 80)}..."`);
 
@@ -110,19 +110,19 @@ async function runGmPhase(
       context: { storyDir, projectId, projectDir },
       maxTurns: 25,
       session: gmSession,
+      traceMetadata: { storyDir, projectId },
     } as Parameters<typeof _run>[2],
   ) as StreamedRunResult<any, any>;
 
-  const events: RunStreamEvent[] = [];
   for await (const event of forwardRun(gmStream)) {
-    events.push(event);
+    yield event;
   }
 
   await gmStream.completed;
   const gmResult = gmStream as unknown as AnyRunResult;
   logAgentResult('GM', gmResult, startTime);
 
-  return { events, gmResult };
+  return gmResult;
 }
 
 async function* enactPhase(
@@ -138,6 +138,7 @@ async function* enactPhase(
   for (const step of schedule) {
     const startTime = Date.now();
     console.log(`[Pipeline] Actor "${step.character}" starting`);
+    let actorCall: ReturnType<typeof callAgent> | undefined;
     try {
       let sessionEntry = sessionCache.get(step.character);
       if (!sessionEntry) {
@@ -146,7 +147,7 @@ async function* enactPhase(
         sessionCache.set(step.character, sessionEntry);
       }
 
-      const actorCall = callAgent({
+      actorCall = callAgent({
         agent: actorAgent,
         input: `${step.character}: ${step.direction}`,
         context: { storyDir, characterName: step.character },
@@ -166,6 +167,7 @@ async function* enactPhase(
         // Best-effort: don't block sequence on interaction log write failure
       }
     } catch (error) {
+      actorCall?.result.catch(() => {});
       console.error(
         `[Pipeline] Actor "${step.character}" failed after ${Date.now() - startTime}ms:`,
         error instanceof Error ? error.message : String(error),
@@ -180,8 +182,9 @@ async function* scribePhase(
 ): AsyncGenerator<RunStreamEvent> {
   const startTime = Date.now();
   console.log(`[Pipeline] Scribe starting`);
+  let scribeCall: ReturnType<typeof callAgent> | undefined;
   try {
-    const scribeCall = callAgent({
+    scribeCall = callAgent({
       agent: scribeAgent,
       input: narrativeSummary,
       context: { storyDir },
@@ -197,6 +200,7 @@ async function* scribePhase(
 
     yield* archivistDagPhase(narrativeSummary, literaryText, storyDir);
   } catch (error) {
+    scribeCall?.result.catch(() => {});
     console.error(
       `[Pipeline] Scribe failed after ${Date.now() - startTime}ms:`,
       error instanceof Error ? error.message : String(error),
@@ -214,8 +218,9 @@ async function* archivistDagPhase(
 
   const charactersAgent = createCharactersAgent(storyDir);
   let charStartTime = Date.now();
+  let charactersCall: ReturnType<typeof callAgent> | undefined;
   try {
-    const charactersCall = callAgent({
+    charactersCall = callAgent({
       agent: charactersAgent,
       input: charactersPrompt,
       context: { storyDir },
@@ -226,6 +231,7 @@ async function* archivistDagPhase(
     const charactersResult = await charactersCall.result;
     logAgentResult('Archivist-Characters', charactersResult, charStartTime);
   } catch (error) {
+    charactersCall?.result.catch(() => {});
     console.error(
       `[Pipeline] Archivist-Characters failed after ${Date.now() - charStartTime}ms:`,
       error instanceof Error ? error.message : String(error),
@@ -260,8 +266,9 @@ async function* archivistDagPhase(
 
   const debtsAgent = createDebtsAgent(storyDir);
   const debtsStartTime = Date.now();
+  let debtsCall: ReturnType<typeof callAgent> | undefined;
   try {
-    const debtsCall = callAgent({
+    debtsCall = callAgent({
       agent: debtsAgent,
       input: charactersPrompt,
       context: { storyDir },
@@ -272,6 +279,7 @@ async function* archivistDagPhase(
     const debtsResult = await debtsCall.result;
     logAgentResult('Archivist-Debts', debtsResult, debtsStartTime);
   } catch (error) {
+    debtsCall?.result.catch(() => {});
     console.error(
       `[Pipeline] Archivist-Debts failed after ${Date.now() - debtsStartTime}ms:`,
       error instanceof Error ? error.message : String(error),
@@ -289,37 +297,18 @@ export async function* createSceneStream(
 
   setupTracing();
 
-  yield* await _withTrace(
-    "Scene Pipeline",
-    async (trace) => {
-      trace.metadata = { projectId, storyDir };
+  const gmResult = yield* gmPhase(input.input, storyDir, projectId, projectDir, gmSession);
 
-      async function* innerStream(): AsyncGenerator<RunStreamEvent> {
-        const { events: gmEvents, gmResult } = await runGmPhase(
-          input.input, storyDir, projectId, projectDir, gmSession,
-        );
-        yield* gmEvents;
+  const scheduleData = extractScheduleFromResult(gmResult);
+  if (!scheduleData) return;
 
-        const scheduleData = extractScheduleFromResult(gmResult);
-        if (!scheduleData) return;
+  const { schedule, narrativeSummary } = scheduleData;
 
-        const { schedule, narrativeSummary } = scheduleData;
+  yield* enactPhase(schedule, storyDir, projectId, projectDir);
 
-        yield* enactPhase(schedule, storyDir, projectId, projectDir);
+  yield* scribePhase(narrativeSummary, storyDir);
 
-        yield* scribePhase(narrativeSummary, storyDir);
-
-        clearInteractionLog(storyDir);
-      }
-
-      const allEvents: RunStreamEvent[] = [];
-      for await (const event of innerStream()) {
-        allEvents.push(event);
-      }
-      return allEvents;
-    },
-    { metadata: { projectId, storyDir } },
-  );
+  clearInteractionLog(storyDir);
 }
 
 export function runScenePipeline(
@@ -333,7 +322,6 @@ export function runScenePipeline(
 // --- Testability hooks ---
 
 let _run: typeof agentsRun = agentsRun;
-let _withTrace = agentsWithTrace;
 
 export function _setRunFn(fn: typeof agentsRun): void {
   _run = fn;
@@ -341,12 +329,4 @@ export function _setRunFn(fn: typeof agentsRun): void {
 
 export function _resetRunFn(): void {
   _run = agentsRun;
-}
-
-export function _setWithTraceFn(fn: typeof agentsWithTrace): void {
-  _withTrace = fn;
-}
-
-export function _resetWithTraceFn(): void {
-  _withTrace = agentsWithTrace;
 }

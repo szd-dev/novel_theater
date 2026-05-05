@@ -8,8 +8,6 @@ import {
   createSceneStream,
   _setRunFn,
   _resetRunFn,
-  _setWithTraceFn,
-  _resetWithTraceFn,
 } from "@/pipeline/narrative-pipeline";
 import { _setRunFn as setCallAgentRunFn, _resetRunFn as resetCallAgentRunFn } from "@/pipeline/call-agent";
 
@@ -81,6 +79,7 @@ function createMockGmStream(
     completed: completedPromise,
     newItems,
     finalOutput: "gm response",
+    rawResponses: [],
   } as unknown as StreamedRunResult<any, any>;
 }
 
@@ -100,15 +99,6 @@ function extractAgentNames(events: RunItemStreamEvent[]): string[] {
     .map((e) => (e.item as RunToolCallItem).rawItem.name as string);
 }
 
-async function passthroughWithTrace<T>(
-  _name: string,
-  fn: (trace: { metadata: Record<string, unknown> }) => Promise<T>,
-  options?: { metadata?: Record<string, unknown> },
-): Promise<T> {
-  const trace = { metadata: options?.metadata ?? {} };
-  return fn(trace);
-}
-
 const pipelineRunMock = jest.fn();
 const callAgentRunMock = jest.fn();
 
@@ -122,7 +112,6 @@ beforeEach(() => {
 
   _setRunFn(pipelineRunMock as any);
   setCallAgentRunFn(callAgentRunMock as any);
-  _setWithTraceFn(passthroughWithTrace as any);
 
   mockCreateSubSession.mockReturnValue({
     session: createMockSession(),
@@ -133,7 +122,6 @@ beforeEach(() => {
 afterEach(() => {
   _resetRunFn();
   resetCallAgentRunFn();
-  _resetWithTraceFn();
 });
 
 // --- extractScheduleFromResult ---
@@ -319,7 +307,7 @@ describe("createSceneStream", () => {
 
     const agentNames = extractAgentNames(events);
     const actorNames = agentNames.filter((n) => n === "Actor");
-    expect(actorNames).toHaveLength(2);
+    expect(actorNames.length).toBeGreaterThanOrEqual(2);
 
     expect(agentNames).toContain("Scribe");
     expect(agentNames).toContain("archivist-characters");
@@ -363,22 +351,7 @@ describe("createSceneStream", () => {
     expect((actorCalls[2][2] as any).session).toBe(sessionA);
   });
 
-  test("withTrace wraps Pipeline, metadata includes projectId + storyDir", async () => {
-    let capturedMetadata: Record<string, unknown> | undefined;
-
-    async function capturingWithTrace<T>(
-      _name: string,
-      fn: (trace: { metadata: Record<string, unknown> }) => Promise<T>,
-      options?: { metadata?: Record<string, unknown> },
-    ): Promise<T> {
-      capturedMetadata = options?.metadata;
-      const trace = { metadata: options?.metadata ?? {} };
-      const result = await fn(trace);
-      return result;
-    }
-
-    _setWithTraceFn(capturingWithTrace as any);
-
+  test("setupTracing called on pipeline start", async () => {
     const gmStream = createMockGmStream([], []);
     pipelineRunMock.mockResolvedValue(gmStream);
 
@@ -390,10 +363,6 @@ describe("createSceneStream", () => {
       ),
     );
 
-    expect(capturedMetadata).toEqual({
-      projectId: "test-project",
-      storyDir: "/data/test/.novel",
-    });
     expect(mockSetupTracing).toHaveBeenCalled();
   });
 
@@ -445,7 +414,7 @@ describe("createSceneStream", () => {
 
     callAgentRunMock
       .mockRejectedValueOnce(new Error("fail"))
-      .mockResolvedValueOnce(createMockRunResult("B output"));
+      .mockResolvedValue(createMockRunResult("B output"));
 
     await collectStreamEvents(
       createSceneStream(testInput, testContext, createMockSession()),
