@@ -2,13 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { globNovelFiles, readNovelFile } from '@/store/story-files';
 import { resolveProjectPath } from '@/lib/project-path';
+import { getToolProgress } from '@/lib/tool-progress';
 
 export async function GET(request: NextRequest) {
-  const threadId = request.nextUrl.searchParams.get('threadId');
+  const projectId =
+    request.nextUrl.searchParams.get('projectId') ??
+    request.nextUrl.searchParams.get('threadId');
 
-  if (!threadId) {
+  if (!projectId) {
     return NextResponse.json(
-      { success: false, message: 'threadId is required' },
+      { success: false, message: 'projectId is required' },
       { status: 400 },
     );
   }
@@ -39,6 +42,7 @@ export async function GET(request: NextRequest) {
       sceneId: currentSceneId,
       location: currentLocation,
       characters,
+      toolProgress: getToolProgress(projectId),
     });
   } catch (error) {
     return NextResponse.json(
