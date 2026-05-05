@@ -1,11 +1,15 @@
 import { join } from 'node:path';
 import type { UIMessage } from 'ai';
 import { NextRequest, NextResponse } from 'next/server';
+import { run } from '@openai/agents';
+import { createAiSdkUiMessageStreamResponse } from '@openai/agents-extensions/ai-sdk-ui';
 
 import { getOrCreateStorySession } from '@/session/manager';
 import { readChatHistory, saveChatHistory } from '@/session/chat-history';
 import { getProject } from '@/project/manager';
-import { runScenePipeline } from '@/pipeline/narrative-pipeline';
+import { gmAgent } from '@/agents/registry';
+import { acquirePipelineLock, releasePipelineLock } from '@/pipeline/guard';
+import { createPromptLogFilter } from '@/lib/prompt-logger';
 
 export const maxDuration = 60;
 
@@ -58,15 +62,34 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const streamStart = Date.now();
-    const response = runScenePipeline(
-      { input, projectId, projectDir },
-      { storyDir },
-      storySession.gmSession,
-    );
-    console.log(`[API /narrative] Pipeline started in ${Date.now() - streamStart}ms`);
+    if (!acquirePipelineLock(projectId)) {
+      return NextResponse.json(
+        { error: '该项目的上一个场景仍在推进中，请等待完成后再提交。' },
+        { status: 409 },
+      );
+    }
 
-    return response;
+    req.signal.addEventListener(
+      'abort',
+      () => {
+        releasePipelineLock(projectId);
+      },
+      { once: true },
+    );
+
+    const streamStart = Date.now();
+    const stream = await run(gmAgent, input, {
+      stream: true,
+      context: { storyDir, projectId, projectDir },
+      maxTurns: 25,
+      session: storySession.gmSession,
+      callModelInputFilter: createPromptLogFilter(storyDir),
+      signal: req.signal,
+    });
+    stream.completed.then(() => releasePipelineLock(projectId));
+    console.log(`[API /narrative] Agent run started in ${Date.now() - streamStart}ms`);
+
+    return createAiSdkUiMessageStreamResponse(stream);
   } catch (error) {
     if (req.signal.aborted) {
       console.log('[API /narrative] Request aborted after', Date.now() - startTime, 'ms');
