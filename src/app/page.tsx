@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/sheet";
 import { ToolDetailContent } from "@/components/chat/tool-detail-sheet";
 import type { ToolClickPayload } from "@/components/chat/types";
+import { isDynamicToolPart } from "@/components/chat/types";
+import type { ToolProgress } from "@/lib/tool-progress";
 import { FileEditorSheet } from "@/components/chat/file-editor-sheet";
 import { cn } from "@/lib/utils";
 
@@ -83,6 +85,66 @@ function ProjectChat({ projectId, onProjectSelect }: ProjectChatProps) {
     fileTreeRef.current?.refresh();
   }, [messages, stop, persistMessages]);
 
+  function deriveSubmitScheduleActive(msgs: UIMessage[]): boolean {
+    for (const msg of msgs) {
+      for (const part of msg.parts) {
+        if (
+          isDynamicToolPart(part) &&
+          part.toolName === "submit_schedule" &&
+          part.state !== "output-available" &&
+          part.state !== "output-error"
+        ) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  const isActive = status === "streaming" && deriveSubmitScheduleActive(messages);
+
+  const [statusData, setStatusData] = useState<{
+    sceneId?: string;
+    location?: string;
+    toolProgress?: Record<string, ToolProgress>;
+  }>({});
+
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (!projectId) {
+      setStatusData({});
+      return;
+    }
+
+    const poll = async () => {
+      try {
+        const res = await fetch(`/api/narrative/status?projectId=${projectId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setStatusData({
+            sceneId: data.sceneId,
+            location: data.location,
+            toolProgress: data.toolProgress,
+          });
+        }
+      } catch {
+        // Silently fail — don't block chat
+      }
+    };
+
+    poll();
+    const ms = isActive ? 1000 : 5000;
+    intervalRef.current = setInterval(poll, ms);
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [projectId, isActive]);
+
   useEffect(() => {
     if (!projectId) return;
     let cancelled = false;
@@ -139,8 +201,8 @@ function ProjectChat({ projectId, onProjectSelect }: ProjectChatProps) {
           />
         </aside>
         <main className="flex min-h-0 flex-1 flex-col">
-          <SceneIndicator threadId={projectId} />
-          <MessageList messages={messages} status={status} projectId={projectId} onToolClick={handleToolClick} error={error} onClearError={clearError} />
+          <SceneIndicator sceneId={statusData.sceneId} location={statusData.location} />
+          <MessageList messages={messages} status={status} projectId={projectId} onToolClick={handleToolClick} error={error} onClearError={clearError} toolProgress={statusData.toolProgress} />
           <ChatInput
             projectId={projectId}
             onSend={handleSend}

@@ -49,6 +49,7 @@ interface MessageListProps {
   onToolClick?: (tool: ToolClickPayload) => void;
   error?: Error;
   onClearError?: () => void;
+  toolProgress?: Record<string, import("@/lib/tool-progress").ToolProgress>;
 }
 
 export function MessageList({ messages, status, projectId, onToolClick, error, onClearError }: MessageListProps) {
