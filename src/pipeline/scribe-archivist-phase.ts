@@ -9,6 +9,7 @@ import {
   createTimelineAgent,
   createDebtsAgent,
 } from "@/agents/archivist/factory";
+import type { ToolProgress } from "@/lib/tool-progress";
 
 type AnyRunResult = RunResult<any, any>;
 
@@ -41,6 +42,8 @@ async function runArchivistDag(
   narrativeSummary: string,
   literaryText: string,
   storyDir: string,
+  onProgress?: (progress: ToolProgress) => void,
+  totalSteps?: number,
 ): Promise<void> {
   const charactersPrompt = `${narrativeSummary}\n\n## 文学文本\n${literaryText}`;
 
@@ -59,6 +62,14 @@ async function runArchivistDag(
       error instanceof Error ? error.message : String(error),
     );
   }
+
+  onProgress?.({
+    status: 'running',
+    phase: 'archivist',
+    step: (totalSteps ?? 4) - 3,
+    total: totalSteps ?? 4,
+    current: '角色更新',
+  });
 
   const parallelAgents = [
     { agent: createSceneAgent(storyDir), name: 'Archivist-Scene' },
@@ -85,6 +96,14 @@ async function runArchivistDag(
     }
   });
 
+  onProgress?.({
+    status: 'running',
+    phase: 'archivist',
+    step: (totalSteps ?? 4) - 2,
+    total: totalSteps ?? 4,
+    current: '场景/世界/剧情/时间线',
+  });
+
   const debtsAgent = createDebtsAgent(storyDir);
   const debtsStartTime = Date.now();
   try {
@@ -100,11 +119,23 @@ async function runArchivistDag(
       error instanceof Error ? error.message : String(error),
     );
   }
+
+  onProgress?.({
+    status: 'running',
+    phase: 'archivist',
+    step: (totalSteps ?? 4) - 1,
+    total: totalSteps ?? 4,
+    current: '伏笔更新',
+  });
 }
 
 export async function runScribeAndArchivist(
   narrativeSummary: string,
   storyDir: string,
+  opts?: {
+    onProgress?: (progress: ToolProgress) => void;
+    totalSteps: number;
+  },
 ): Promise<ScribeArchivistResult> {
   const startTime = Date.now();
   console.log(`[Pipeline] Scribe starting`);
@@ -121,6 +152,14 @@ export async function runScribeAndArchivist(
     );
     logAgentResult('Scribe', scribeResult, startTime);
     scribeOutput = String(scribeResult.finalOutput ?? "");
+
+    opts?.onProgress?.({
+      status: 'running',
+      phase: 'scribe',
+      step: opts.totalSteps - 4,
+      total: opts.totalSteps,
+      current: 'Scribe',
+    });
   } catch (error) {
     console.error(
       `[Pipeline] Scribe failed after ${Date.now() - startTime}ms:`,
@@ -128,7 +167,7 @@ export async function runScribeAndArchivist(
     );
   }
 
-  await runArchivistDag(narrativeSummary, scribeOutput, storyDir);
+  await runArchivistDag(narrativeSummary, scribeOutput, storyDir, opts?.onProgress, opts?.totalSteps);
 
   return { scribeOutput, archivistDone: true };
 }

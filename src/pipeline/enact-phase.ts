@@ -3,6 +3,7 @@ import type { RunResult, Session } from "@openai/agents";
 import { clearInteractionLog, appendInteractionLog } from "@/store/interaction-log";
 import { createSubSession } from "@/session/manager";
 import { actorAgent } from "@/agents/actor";
+import type { ToolProgress } from "@/lib/tool-progress";
 
 type AnyRunResult = RunResult<any, any>;
 
@@ -47,6 +48,7 @@ export async function runEnactPhase(
   storyDir: string,
   projectId: string,
   projectDir: string,
+  opts?: { onProgress?: (progress: ToolProgress) => void; totalSteps: number },
 ): Promise<EnactResult> {
   console.log(`[Pipeline] Enact phase: ${schedule.length} step(s)`);
   clearInteractionLog(storyDir);
@@ -54,9 +56,17 @@ export async function runEnactPhase(
   const sessionCache = new Map<string, { session: Session; sessionId: string }>();
   const steps: EnactStep[] = [];
 
-  for (const step of schedule) {
+  for (const [i, step] of schedule.entries()) {
     const startTime = Date.now();
     console.log(`[Pipeline] Actor "${step.character}" starting`);
+
+    opts?.onProgress?.({
+      status: 'running',
+      phase: 'actor',
+      step: i + 1,
+      total: opts.totalSteps,
+      current: step.character,
+    });
 
     try {
       let sessionEntry = sessionCache.get(step.character);

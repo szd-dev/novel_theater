@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { join } from 'node:path';
 import { runEnactPhase as _runEnactPhase } from '@/pipeline/enact-phase';
 import { runScribeAndArchivist as _runScribeAndArchivist } from '@/pipeline/scribe-archivist-phase';
+import type { ToolProgress } from '@/lib/tool-progress';
 import {
   setToolProgress as _setToolProgress,
   clearToolProgress as _clearToolProgress,
@@ -40,6 +41,8 @@ export function _resetClearToolProgress() {
   clearToolProgress = _clearToolProgress;
 }
 
+type ToolCallDetails = { toolCall?: { callId: string } };
+
 export const submitScheduleTool = tool({
   name: 'submit_schedule',
   description:
@@ -57,7 +60,7 @@ export const submitScheduleTool = tool({
       .describe('角色出场序列'),
     narrativeSummary: z.string().describe('场景叙事摘要（用户输入+场景剧本）'),
   }),
-  execute: async (input, runContext) => {
+  execute: async (input, runContext, details?: ToolCallDetails) => {
     const ctx = (runContext as RunContext).context as {
       projectId?: string;
       projectDir?: string;
@@ -66,57 +69,37 @@ export const submitScheduleTool = tool({
     const projectId = ctx.projectId!;
     const projectDir = ctx.projectDir!;
     const storyDir = ctx.storyDir ?? join(projectDir, '.novel');
-    const toolName = 'submit_schedule';
     const { schedule, narrativeSummary } = input;
-    const total = schedule.length + 3;
+    const callId = details?.toolCall?.callId ?? `pipeline-${projectId}-${Date.now()}`;
+    const total = schedule.length + 5;
+    const onProgress = (p: ToolProgress) => setToolProgress(projectId, callId, p);
 
     try {
-      setToolProgress(projectId, toolName, {
-        status: 'running',
-        phase: 'actor',
-        step: 0,
-        total,
-        current: '开始',
-      });
-
       const enactResult = await runEnactPhase(
         schedule,
         storyDir,
         projectId,
         projectDir,
+        { onProgress, totalSteps: total },
       );
-
-      setToolProgress(projectId, toolName, {
-        status: 'running',
-        phase: 'scribe',
-        step: schedule.length + 1,
-        total,
-        current: 'Scribe',
-      });
 
       const saResult = await runScribeAndArchivist(
         narrativeSummary,
         storyDir,
+        { onProgress, totalSteps: total },
       );
 
-      setToolProgress(projectId, toolName, {
-        status: 'completed',
-        phase: 'archivist',
-        step: total,
-        total,
-        current: '完成',
-      });
-
-      clearToolProgress(projectId, toolName);
+      clearToolProgress(projectId, callId);
 
       return toolResult(
         JSON.stringify({
+          callId,
           scribeOutput: saResult.scribeOutput,
           steps: enactResult.steps,
         }),
       );
     } catch (error) {
-      clearToolProgress(projectId, toolName);
+      clearToolProgress(projectId, callId);
       return toolError(error instanceof Error ? error.message : String(error));
     }
   },

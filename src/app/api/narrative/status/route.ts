@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
   const projectId =
     request.nextUrl.searchParams.get('projectId') ??
     request.nextUrl.searchParams.get('threadId');
+  const callId = request.nextUrl.searchParams.get('callId');
 
   if (!projectId) {
     return NextResponse.json(
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
       sceneId: currentSceneId,
       location: currentLocation,
       characters,
-      toolProgress: getToolProgress(projectId),
+      toolProgress: callId ? getToolProgress(projectId, callId) : getToolProgress(projectId),
     });
   } catch (error) {
     return NextResponse.json(
