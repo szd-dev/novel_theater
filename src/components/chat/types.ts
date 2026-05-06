@@ -14,7 +14,11 @@ export interface ToolClickPayload {
   state?: DynamicToolState;
 }
 
-/** Custom part type from OpenAI Agents pipeline — not a standard AI SDK part. */
+/**
+ * Custom part type from OpenAI Agents pipeline — aligned with AI SDK's
+ * `DynamicToolUIPart`. Contains the subset of fields relevant to our UI,
+ * plus extra optional fields from the SDK for type compatibility at runtime.
+ */
 export interface DynamicToolPart {
   type: "dynamic-tool";
   toolName?: string;
@@ -22,7 +26,11 @@ export interface DynamicToolPart {
   input?: Record<string, unknown>;
   output?: string;
   error?: string;
+  errorText?: string;
   toolCallId?: string;
+  title?: string;
+  providerExecuted?: boolean;
+  preliminary?: boolean;
 }
 
 export function isDynamicToolPart(

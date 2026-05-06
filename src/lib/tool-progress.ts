@@ -6,11 +6,12 @@ export interface ToolProgress {
   current: string;
 }
 
+// Outer Map key: projectId, Inner Map key: callId
 const store = new Map<string, Map<string, ToolProgress>>();
 
 export function setToolProgress(
   projectId: string,
-  toolName: string,
+  callId: string,
   progress: ToolProgress,
 ): void {
   let inner = store.get(projectId);
@@ -18,24 +19,33 @@ export function setToolProgress(
     inner = new Map<string, ToolProgress>();
     store.set(projectId, inner);
   }
-  inner.set(toolName, progress);
+  inner.set(callId, progress);
 }
 
 export function getToolProgress(
   projectId: string,
-): Record<string, ToolProgress> {
+): Record<string, ToolProgress>;
+export function getToolProgress(
+  projectId: string,
+  callId: string,
+): ToolProgress | undefined;
+export function getToolProgress(
+  projectId: string,
+  callId?: string,
+): Record<string, ToolProgress> | ToolProgress | undefined {
   const inner = store.get(projectId);
-  if (!inner) return {};
+  if (!inner) return callId ? undefined : {};
+  if (callId) return inner.get(callId);
   return Object.fromEntries(inner);
 }
 
 export function clearToolProgress(
   projectId: string,
-  toolName: string,
+  callId: string,
 ): void {
   const inner = store.get(projectId);
   if (!inner) return;
-  inner.delete(toolName);
+  inner.delete(callId);
   if (inner.size === 0) {
     store.delete(projectId);
   }

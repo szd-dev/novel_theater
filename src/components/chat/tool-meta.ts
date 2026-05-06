@@ -24,16 +24,11 @@ export const AGENT_NAMES = {
   archivist: "场记",
 } as const;
 
+// Only used for stream-part-based step inference (deprecated approach, retained for transition).
+// Actor/Scribe/Archivist sub-agents are called via run() inside pipeline phases, not as GM tools,
+// so their tool calls never produce dynamic-tool parts — only submit_schedule does.
 export const TOOL_STEP_MAP: Record<string, number> = {
   submit_schedule: 0,
-  Actor: 1,
-  Scribe: 2,
-  "archivist-characters": 3,
-  "archivist-scene": 3,
-  "archivist-world": 3,
-  "archivist-plot": 3,
-  "archivist-timeline": 3,
-  "archivist-debts": 3,
 };
 
 export const TOOL_META_MAP: Record<string, ToolMeta> = {
