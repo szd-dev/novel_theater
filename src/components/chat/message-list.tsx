@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import type { UIMessage, ChatStatus } from "ai";
 import type { ToolClickPayload } from "@/components/chat/types";
 import type { ToolProgress } from "@/lib/tool-progress";
+import { isDynamicToolPart } from "@/components/chat/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageItem } from "@/components/chat/message-item";
 import { Button } from "@/components/ui/button";
@@ -18,8 +19,18 @@ interface MessageListProps {
   toolProgress?: Record<string, ToolProgress>;
 }
 
+function isAssistantThinking(messages: UIMessage[], status: ChatStatus): boolean {
+  if (status !== "submitted" && status !== "streaming") return false;
+  const last = messages[messages.length - 1];
+  if (!last || last.role !== "assistant") return false;
+  return !last.parts.some(
+    (p) => p.type === "text" || isDynamicToolPart(p),
+  );
+}
+
 export function MessageList({ messages, status, projectId, onToolClick, error, onClearError, toolProgress }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
+  const thinking = isAssistantThinking(messages, status);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -54,6 +65,18 @@ export function MessageList({ messages, status, projectId, onToolClick, error, o
                   关闭
                 </Button>
               )}
+            </div>
+          )}
+          {thinking && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span
+                className="relative flex size-2"
+                style={{ color: "#8B5CF6" }}
+              >
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-75" style={{ backgroundColor: "#8B5CF6" }} />
+                <span className="relative inline-flex size-2 rounded-full" style={{ backgroundColor: "#8B5CF6" }} />
+              </span>
+              <span className="animate-pulse">GM 正在策划下一幕...</span>
             </div>
           )}
         </div>
