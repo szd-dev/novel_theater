@@ -9,10 +9,12 @@ import { ToolTag } from "@/components/chat/tool-tag";
 import { splitBySteps } from "@/components/chat/message-segments";
 import { toolNameToAgentKey } from "@/components/chat/tool-meta";
 import { isDynamicToolPart, type ToolClickPayload } from "@/components/chat/types";
+import type { ToolProgress } from "@/lib/tool-progress";
 
 interface MessageItemProps {
   message: UIMessage;
   onToolClick?: (tool: ToolClickPayload) => void;
+  toolProgress?: Record<string, ToolProgress>;
 }
 
 function extractAgentLabel(message: UIMessage): string | null {
@@ -40,6 +42,7 @@ interface SeparatedParts {
 
 function separateParts(
   parts: UIMessage["parts"],
+  toolProgress?: Record<string, ToolProgress>,
   onToolClick?: (tool: ToolClickPayload) => void
 ): SeparatedParts {
   const textParts: ReactElement[] = [];
@@ -61,6 +64,7 @@ function separateParts(
           toolName={part.toolName ?? ""}
           state={part.state ?? "input-streaming"}
           input={part.input}
+          progress={toolProgress?.[part.toolCallId ?? ""]}
           onClick={
             onToolClick
               ? () =>
@@ -81,7 +85,7 @@ function separateParts(
   return { textParts, toolParts };
 }
 
-export function MessageItem({ message, onToolClick }: MessageItemProps) {
+export function MessageItem({ message, onToolClick, toolProgress }: MessageItemProps) {
   const isUser = message.role === "user";
   const agentLabel = extractAgentLabel(message);
   const segments = !isUser ? splitBySteps(message) : [];
@@ -89,6 +93,7 @@ export function MessageItem({ message, onToolClick }: MessageItemProps) {
   if (isUser || segments.length <= 1) {
     const { textParts, toolParts } = separateParts(
       message.parts,
+      toolProgress,
       !isUser ? onToolClick : undefined
     );
 
@@ -130,6 +135,7 @@ export function MessageItem({ message, onToolClick }: MessageItemProps) {
       {segments.map((segment, i) => {
         const { textParts, toolParts } = separateParts(
           segment.parts,
+          toolProgress,
           onToolClick
         );
         return (

@@ -3,44 +3,10 @@
 import { useEffect, useRef } from "react";
 import type { UIMessage, ChatStatus } from "ai";
 import type { ToolClickPayload } from "@/components/chat/types";
-import { isDynamicToolPart } from "@/components/chat/types";
+import type { ToolProgress } from "@/lib/tool-progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { MessageItem } from "@/components/chat/message-item";
-import { ProgressIndicator } from "@/components/chat/progress-indicator";
-import { PipelineProgress } from "@/components/chat/pipeline-progress";
-import { TOOL_STEP_MAP } from "@/components/chat/tool-meta";
 import { Button } from "@/components/ui/button";
-
-function deriveProgress(messages: UIMessage[], status: ChatStatus) {
-  if (status !== "streaming" && status !== "submitted") {
-    return { currentStep: undefined, isThinking: false };
-  }
-  let latestStep: number | undefined;
-  for (const msg of messages) {
-    for (const part of msg.parts) {
-      if (isDynamicToolPart(part) && part.toolName && part.toolName in TOOL_STEP_MAP) {
-        latestStep = TOOL_STEP_MAP[part.toolName];
-      }
-    }
-  }
-  return { currentStep: latestStep, isThinking: status === "submitted" };
-}
-
-function deriveSubmitScheduleActive(messages: UIMessage[]): boolean {
-  for (const msg of messages) {
-    for (const part of msg.parts) {
-      if (
-        isDynamicToolPart(part) &&
-        part.toolName === "submit_schedule" &&
-        part.state !== "output-available" &&
-        part.state !== "output-error"
-      ) {
-        return true;
-      }
-    }
-  }
-  return false;
-}
 
 interface MessageListProps {
   messages: UIMessage[];
@@ -49,13 +15,11 @@ interface MessageListProps {
   onToolClick?: (tool: ToolClickPayload) => void;
   error?: Error;
   onClearError?: () => void;
-  toolProgress?: Record<string, import("@/lib/tool-progress").ToolProgress>;
+  toolProgress?: Record<string, ToolProgress>;
 }
 
-export function MessageList({ messages, status, projectId, onToolClick, error, onClearError }: MessageListProps) {
+export function MessageList({ messages, status, projectId, onToolClick, error, onClearError, toolProgress }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
-  const { currentStep, isThinking } = deriveProgress(messages, status);
-  const isSubmitScheduleActive = deriveSubmitScheduleActive(messages);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -76,14 +40,8 @@ export function MessageList({ messages, status, projectId, onToolClick, error, o
         )}
         <div className="flex flex-col gap-4">
           {messages.map((message) => (
-            <MessageItem key={message.id} message={message} onToolClick={onToolClick} />
+            <MessageItem key={message.id} message={message} onToolClick={onToolClick} toolProgress={toolProgress} />
           ))}
-          <PipelineProgress projectId={projectId} isActive={isSubmitScheduleActive} />
-          {(status === "submitted" || status === "streaming") && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <ProgressIndicator currentStep={currentStep} isThinking={isThinking} />
-            </div>
-          )}
           {error && (
             <div className="flex items-start gap-3 rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
               <span className="mt-0.5 shrink-0">⚠</span>
