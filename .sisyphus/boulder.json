@@ -1,58 +1,50 @@
 {
-  "active_plan": "/data/novel_theater/.sisyphus/plans/gm-pause-resume.md",
-  "started_at": "2026-05-05T13:24:12.390Z",
+  "active_plan": "/data/novel_theater/.sisyphus/plans/pipeline-refactor.md",
+  "started_at": "2026-05-05T16:50:04.781Z",
   "session_ids": [
-    "ses_207b08240ffeoZ3YhAuq9voyfv",
-    "ses_2079e60b8ffeY9Ms28j751OUEB",
-    "ses_2079e5fb5ffeN4vqbQJl7lUv2m",
-    "ses_2079e5facffe1MMze3FnCdfMV6",
-    "ses_2079e5e95ffeg29dAqG9qMbCmQ"
+    "ses_2074ad41dffeenWxn258qfye8j"
   ],
   "session_origins": {
-    "ses_207b08240ffeoZ3YhAuq9voyfv": "direct",
-    "ses_2079e60b8ffeY9Ms28j751OUEB": "appended",
-    "ses_2079e5fb5ffeN4vqbQJl7lUv2m": "appended",
-    "ses_2079e5facffe1MMze3FnCdfMV6": "appended",
-    "ses_2079e5e95ffeg29dAqG9qMbCmQ": "appended"
+    "ses_2074ad41dffeenWxn258qfye8j": "direct"
   },
-  "plan_name": "gm-pause-resume",
+  "plan_name": "pipeline-refactor",
   "agent": "atlas",
   "task_sessions": {
     "todo:1": {
       "task_key": "todo:1",
       "task_label": "1",
-      "task_title": "修改 `submit_schedule` 返回值",
-      "session_id": "ses_207ae544dffeJpfsuVJlTWLwCs",
+      "task_title": "创建 `src/lib/tool-progress.ts` — in-memory 工具进度存储",
+      "session_id": "ses_206f2628affelDIfKonBP4XwP5",
       "agent": "Sisyphus-Junior",
       "category": "quick",
-      "updated_at": "2026-05-05T13:27:03.606Z"
+      "updated_at": "2026-05-05T16:58:55.189Z"
     },
     "todo:3": {
       "task_key": "todo:3",
       "task_label": "3",
-      "task_title": "改造 narrative-pipeline.ts 流程",
-      "session_id": "ses_207aa5fbeffeNDH7OVeyqQ49dh",
+      "task_title": "重写 `submit_schedule` 工具",
+      "session_id": "ses_206e148b7ffeDoYfI6oDfBVHC2",
       "agent": "Sisyphus-Junior",
-      "category": "unspecified-high",
-      "updated_at": "2026-05-05T13:33:28.385Z"
+      "category": "deep",
+      "updated_at": "2026-05-05T17:25:47.578Z"
     },
     "todo:4": {
       "task_key": "todo:4",
       "task_label": "4",
-      "task_title": "适配测试",
-      "session_id": "ses_207a5af16ffeo7TsLd8lWiQX3b",
+      "task_title": "恢复 `registry.ts` 稳定版结构",
+      "session_id": "ses_206d20903ffeKjkTmRjeywmlKe",
       "agent": "Sisyphus-Junior",
-      "category": "unspecified-high",
-      "updated_at": "2026-05-05T13:41:36.823Z"
+      "category": "quick",
+      "updated_at": "2026-05-05T17:39:12.535Z"
     },
-    "final-wave:f1": {
-      "task_key": "final-wave:f1",
-      "task_label": "F1",
-      "task_title": "**Plan Compliance Audit** — `oracle`",
-      "session_id": "ses_2079e5e95ffeg29dAqG9qMbCmQ",
+    "todo:11": {
+      "task_key": "todo:11",
+      "task_label": "11",
+      "task_title": "前端：轮询进度展示组件",
+      "session_id": "ses_206bfcfd9ffekaqlZjNPhELI3B",
       "agent": "Sisyphus-Junior",
-      "category": "unspecified-high",
-      "updated_at": "2026-05-05T13:49:29.436Z"
+      "category": "quick",
+      "updated_at": "2026-05-05T17:49:30.649Z"
     }
   }
 }
