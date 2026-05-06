@@ -15,6 +15,8 @@ export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   const startTime = Date.now();
+  let lockAcquired = false;
+  let projectId: string | undefined;
   try {
     if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json(
@@ -23,8 +25,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { messages, projectId }: { messages: UIMessage[]; projectId?: string } =
-      await req.json();
+    const body: { messages: UIMessage[]; projectId?: string } = await req.json();
+    const { messages } = body;
+    projectId = body.projectId;
 
     if (!projectId) {
       return NextResponse.json(
@@ -33,19 +36,21 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log(`[API /narrative] Request start, projectId=${projectId}, messages=${messages.length}`);
+    const pid = projectId;
 
-    const project = await getProject(projectId);
+    console.log(`[API /narrative] Request start, projectId=${pid}, messages=${messages.length}`);
+
+    const project = await getProject(pid);
     if (!project) {
       return NextResponse.json(
-        { error: `Project not found: ${projectId}` },
+        { error: `Project not found: ${pid}` },
         { status: 400 },
       );
     }
 
     const projectDir = project.dataDir;
     const storyDir = join(projectDir, '.novel');
-    const storySession = getOrCreateStorySession(projectId, projectDir);
+    const storySession = getOrCreateStorySession(pid, projectDir);
 
     const lastUserMessage = messages.filter((m) => m.role === 'user').pop();
     const input = lastUserMessage
@@ -62,17 +67,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!acquirePipelineLock(projectId)) {
+    if (!acquirePipelineLock(pid)) {
       return NextResponse.json(
         { error: '该项目的上一个场景仍在推进中，请等待完成后再提交。' },
         { status: 409 },
       );
     }
+    lockAcquired = true;
 
     req.signal.addEventListener(
       'abort',
       () => {
-        releasePipelineLock(projectId);
+        releasePipelineLock(pid);
       },
       { once: true },
     );
@@ -86,11 +92,12 @@ export async function POST(req: NextRequest) {
       callModelInputFilter: createPromptLogFilter(storyDir),
       signal: req.signal,
     });
-    stream.completed.then(() => releasePipelineLock(projectId));
+    stream.completed.finally(() => releasePipelineLock(pid));
     console.log(`[API /narrative] Agent run started in ${Date.now() - streamStart}ms`);
 
     return createAiSdkUiMessageStreamResponse(stream);
   } catch (error) {
+    if (lockAcquired) releasePipelineLock(projectId!);
     if (req.signal.aborted) {
       console.log('[API /narrative] Request aborted after', Date.now() - startTime, 'ms');
       return NextResponse.json({ error: 'Request aborted' }, { status: 499 });
