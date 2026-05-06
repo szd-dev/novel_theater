@@ -1,50 +1,78 @@
 {
-  "active_plan": "/data/novel_theater/.sisyphus/plans/pipeline-refactor.md",
-  "started_at": "2026-05-05T16:50:04.781Z",
+  "active_plan": "/Users/qihoo/codebase/github/novel_theater/.sisyphus/plans/scheduler-progress-refactor.md",
+  "started_at": "2026-05-06T08:06:03.699Z",
   "session_ids": [
-    "ses_2074ad41dffeenWxn258qfye8j"
+    "ses_203ced3d7ffekXxaPWw0r6LUMI",
+    "ses_2037f7a7dffeH0vz0PdBSP1SGO",
+    "ses_2037f265affd2AOMoPpUVTQ1Lc",
+    "ses_2037ed030ffeA83HvIm9C8rmOm",
+    "ses_2037e656affdwK4pRevllWwdr7",
+    "ses_2037b15c7ffdf81KQm2VLpKAaI"
   ],
   "session_origins": {
-    "ses_2074ad41dffeenWxn258qfye8j": "direct"
+    "ses_203ced3d7ffekXxaPWw0r6LUMI": "direct",
+    "ses_2037f7a7dffeH0vz0PdBSP1SGO": "appended",
+    "ses_2037f265affd2AOMoPpUVTQ1Lc": "appended",
+    "ses_2037ed030ffeA83HvIm9C8rmOm": "appended",
+    "ses_2037e656affdwK4pRevllWwdr7": "appended",
+    "ses_2037b15c7ffdf81KQm2VLpKAaI": "appended"
   },
-  "plan_name": "pipeline-refactor",
+  "plan_name": "scheduler-progress-refactor",
   "agent": "atlas",
   "task_sessions": {
     "todo:1": {
       "task_key": "todo:1",
       "task_label": "1",
-      "task_title": "创建 `src/lib/tool-progress.ts` — in-memory 工具进度存储",
-      "session_id": "ses_206f2628affelDIfKonBP4XwP5",
+      "task_title": "tool-progress.ts — callId key refactor",
+      "session_id": "ses_203ac7033ffe0tPdp5tmCp0Yay",
       "agent": "Sisyphus-Junior",
       "category": "quick",
-      "updated_at": "2026-05-05T16:58:55.189Z"
-    },
-    "todo:3": {
-      "task_key": "todo:3",
-      "task_label": "3",
-      "task_title": "重写 `submit_schedule` 工具",
-      "session_id": "ses_206e148b7ffeDoYfI6oDfBVHC2",
-      "agent": "Sisyphus-Junior",
-      "category": "deep",
-      "updated_at": "2026-05-05T17:25:47.578Z"
+      "updated_at": "2026-05-06T08:08:08.530Z"
     },
     "todo:4": {
       "task_key": "todo:4",
       "task_label": "4",
-      "task_title": "恢复 `registry.ts` 稳定版结构",
-      "session_id": "ses_206d20903ffeKjkTmRjeywmlKe",
+      "task_title": "submit-schedule.ts — callId + onProgress + total adjustment",
+      "session_id": "ses_203a8653affeNGp2FFtJ40j9mG",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-05-06T08:15:22.088Z"
+    },
+    "todo:8": {
+      "task_key": "todo:8",
+      "task_label": "8",
+      "task_title": "ProjectChat polling hook",
+      "session_id": "ses_203a2842affecHaloXaWXXK8Oe",
       "agent": "Sisyphus-Junior",
       "category": "quick",
-      "updated_at": "2026-05-05T17:39:12.535Z"
+      "updated_at": "2026-05-06T08:21:19.298Z"
     },
     "todo:11": {
       "task_key": "todo:11",
       "task_label": "11",
-      "task_title": "前端：轮询进度展示组件",
-      "session_id": "ses_206bfcfd9ffekaqlZjNPhELI3B",
+      "task_title": "MessageList — wire everything, remove old components",
+      "session_id": "ses_2039af2cdffeSZ60emTfJFsjo9",
       "agent": "Sisyphus-Junior",
-      "category": "quick",
-      "updated_at": "2026-05-05T17:49:30.649Z"
+      "category": "unspecified-high",
+      "updated_at": "2026-05-06T08:30:53.654Z"
+    },
+    "todo:12": {
+      "task_key": "todo:12",
+      "task_label": "12",
+      "task_title": "Update tests",
+      "session_id": "ses_203950072ffevGlxvGaz2iDYUs",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-05-06T08:55:03.048Z"
+    },
+    "final-wave:f1": {
+      "task_key": "final-wave:f1",
+      "task_label": "F1",
+      "task_title": "**Plan Compliance Audit** — `oracle`",
+      "session_id": "ses_2037ed030ffeA83HvIm9C8rmOm",
+      "agent": "Sisyphus-Junior",
+      "category": "unspecified-high",
+      "updated_at": "2026-05-06T09:10:36.836Z"
     }
   }
 }

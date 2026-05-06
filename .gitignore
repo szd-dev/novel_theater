@@ -46,4 +46,8 @@ next-env.d.ts
 .archive/
 .data_store/
 .playwright-mcp
-
+.sisyphus/evidence/**
+.sisyphus/notepads
+.sisyphus/run-continuation
+.sisyphus/drafts
+test-results

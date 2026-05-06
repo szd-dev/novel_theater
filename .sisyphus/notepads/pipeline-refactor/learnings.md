@@ -31,3 +31,15 @@
 - Build: passes cleanly
 - Lint: `RunResult<any, any>` pattern matches existing `narrative-pipeline.ts:23` convention
 - Existing narrative-pipeline.ts left UNCHANGED (will be deleted in later task)
+
+## 2026-05-06: Deprecated progress UI removed (Task 11)
+
+- **message-list.tsx**: Removed imports of `ProgressIndicator`, `PipelineProgress`, `TOOL_STEP_MAP` and their associated functions (`deriveProgress`, `deriveSubmitScheduleActive`).
+- Replaced inline `import("@/lib/tool-progress").ToolProgress` with proper top-level type import.
+- Removed `<PipelineProgress>` and `<ProgressIndicator>` JSX blocks.
+- `toolProgress` is now destructured from props and passed down to `MessageItem`.
+- **message-item.tsx**: Added `toolProgress?: Record<string, ToolProgress>` to `MessageItemProps` and `separateParts` params.
+- Progress matching: `progress={toolProgress?.[part.toolCallId ?? ""]}` — uses `DynamicToolPart.toolCallId` as the key into the `toolProgress` map.
+- `ToolTag` already accepts `progress?: ToolProgress` prop (from Task 9), so no changes needed there.
+- Build passes cleanly. No LSP diagnostics on changed files.
+- Pipeline-progress.tsx and progress-indicator.tsx remain on disk but are no longer imported or rendered.
