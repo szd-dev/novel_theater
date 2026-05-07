@@ -9,6 +9,7 @@ import { readChatHistory, saveChatHistory } from '@/session/chat-history';
 import { getProject } from '@/project/manager';
 import { gmAgent } from '@/agents/registry';
 import { createPromptLogFilter } from '@/lib/prompt-logger';
+import { findTruncationPoint } from '@/lib/gm-truncation';
 
 export const maxDuration = 60;
 
@@ -71,6 +72,11 @@ export async function POST(req: NextRequest) {
       context: { storyDir, projectId, projectDir },
       maxTurns: 25,
       session: storySession.gmSession,
+      sessionInputCallback: (historyItems, newItems) => {
+        const cutIndex = findTruncationPoint(historyItems);
+        const filtered = cutIndex > 0 ? historyItems.slice(cutIndex) : historyItems;
+        return [...filtered, ...newItems];
+      },
       callModelInputFilter: createPromptLogFilter(storyDir),
       signal: req.signal,
     });

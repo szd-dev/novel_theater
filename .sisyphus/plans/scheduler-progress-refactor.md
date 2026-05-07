@@ -909,7 +909,7 @@ Max Concurrent: 4 (Waves 1, 2, 3)
 
 > 4 review agents run in PARALLEL. ALL must APPROVE. Present consolidated results to user and get explicit "okay" before completing.
 
-- [ ] F1. **Plan Compliance Audit** — `oracle`
+- [x] F1. **Plan Compliance Audit** — `oracle`
   Read the plan end-to-end. For each "Must Have": verify implementation exists (read file, curl endpoint, run command). For each "Must NOT Have": search codebase for forbidden patterns — reject with file:line if found. Check evidence files exist in .sisyphus/evidence/. Verify:
   - submit_schedule execute 接收 details 第 3 参数
   - enact-phase 接受 onProgress 参数
@@ -920,14 +920,14 @@ Max Concurrent: 4 (Waves 1, 2, 3)
   - PipelineProgress 和 ProgressIndicator 已删除
   Output: `Must Have [N/N] | Must NOT Have [N/N] | Tasks [N/N] | VERDICT: APPROVE/REJECT`
 
-- [ ] F2. **Code Quality Review** — `unspecified-high`
+- [x] F2. **Code Quality Review** — `unspecified-high`
   Run `bun run build` + `bun run lint` + `bun test`. Review all changed files for: `as any`/`@ts-ignore`, empty catches, console.log in prod, commented-out code, unused imports. Check AI slop: excessive comments, over-abstraction, generic names (data/result/item/temp). Verify:
   - No `as any` in pipeline or tool files
   - No empty catch blocks without comments
   - All imports used
   Output: `Build [PASS/FAIL] | Lint [PASS/FAIL] | Tests [N pass/N fail] | Files [N clean/N issues] | VERDICT`
 
-- [ ] F3. **Real Manual QA** — `unspecified-high` (+ `playwright` skill)
+- [x] F3. **Real Manual QA** — `unspecified-high` (+ `playwright` skill)
   Start from clean state. Execute EVERY QA scenario from EVERY task — follow exact steps, capture evidence. Test cross-task integration:
   - Start a real scene that triggers submit_schedule
   - Observe ToolTag shows per-character progress during actor phase
@@ -939,7 +939,7 @@ Max Concurrent: 4 (Waves 1, 2, 3)
   Save to `.sisyphus/evidence/final-qa/`.
   Output: `Scenarios [N/N pass] | Integration [N/N] | Edge Cases [N tested] | VERDICT`
 
-- [ ] F4. **Scope Fidelity Check** — `deep`
+- [x] F4. **Scope Fidelity Check** — `deep`
   For each task: read "What to do", read actual diff (git log/diff). Verify 1:1 — everything in spec was built (no missing), nothing beyond spec was built (no creep). Check "Must NOT do" compliance. Detect cross-task contamination: Task N touching Task M's files. Flag unaccounted changes. Verify:
   - Agent definitions untouched (actor.ts, scribe.ts, gm.ts, archivist/factory.ts)
   - archivist DAG execution logic unchanged (only progress callback added)
@@ -969,9 +969,9 @@ bun run build              # Expected: production build succeeds
 ```
 
 ### Final Checklist
-- [ ] ToolTag shows progress bar during submit_schedule execution
-- [ ] Per-character actor progress visible (step N/total with character name)
-- [ ] Archivist 3 sub-steps visible (角色更新 → 场景/世界/剧情/时间线 → 伏笔更新)
-- [ ] PipelineProgress and ProgressIndicator components removed
-- [ ] Single polling in ProjectChat with adaptive frequency
-- [ ] No regression in existing functionality
+- [x] ToolTag shows progress bar during submit_schedule execution
+- [x] Per-character actor progress visible (step N/total with character name)
+- [x] Archivist 3 sub-steps visible (角色更新 → 场景/世界/剧情/时间线 → 伏笔更新)
+- [x] PipelineProgress and ProgressIndicator components removed
+- [x] Single polling in ProjectChat with adaptive frequency
+- [x] No regression in existing functionality
