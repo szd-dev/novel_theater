@@ -4,7 +4,6 @@ import { join } from "node:path";
 import { rmSync, existsSync } from "node:fs";
 
 import { gmAgent, actorAgent, scribeAgent } from "@/agents/registry";
-import { archivistAgent } from "@/agents/archivist";
 import { createStorySession, getStorySession, getOrCreateStorySession, clearStorySession } from "@/session/manager";
 import { initStory, archiveStory, resetStory } from "@/store/story-files";
 
@@ -31,12 +30,6 @@ describe("自由剧场 v2 Agent Architecture", () => {
       expect(scribeAgent.name).toBe("Scribe");
       const toolNames = scribeAgent.tools.map((t: any) => t.name);
       expect(toolNames).toContain("read_file");
-    });
-
-    test("Archivist agent has correct tools", () => {
-      expect(archivistAgent.name).toBe("Archivist");
-      const toolNames = archivistAgent.tools.map((t: any) => t.name).sort();
-      expect(toolNames).toEqual(["edit_file", "glob_files", "list_characters", "read_file", "resolve_character", "write_file"]);
     });
   });
 

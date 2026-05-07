@@ -8,14 +8,12 @@ import { getOrCreateStorySession } from '@/session/manager';
 import { readChatHistory, saveChatHistory } from '@/session/chat-history';
 import { getProject } from '@/project/manager';
 import { gmAgent } from '@/agents/registry';
-import { acquirePipelineLock, releasePipelineLock } from '@/pipeline/guard';
 import { createPromptLogFilter } from '@/lib/prompt-logger';
 
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   const startTime = Date.now();
-  let lockAcquired = false;
   let projectId: string | undefined;
   try {
     if (!process.env.OPENAI_API_KEY) {
@@ -67,22 +65,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!acquirePipelineLock(pid)) {
-      return NextResponse.json(
-        { error: '该项目的上一个场景仍在推进中，请等待完成后再提交。' },
-        { status: 409 },
-      );
-    }
-    lockAcquired = true;
-
-    req.signal.addEventListener(
-      'abort',
-      () => {
-        releasePipelineLock(pid);
-      },
-      { once: true },
-    );
-
     const streamStart = Date.now();
     const stream = await run(gmAgent, input, {
       stream: true,
@@ -92,12 +74,10 @@ export async function POST(req: NextRequest) {
       callModelInputFilter: createPromptLogFilter(storyDir),
       signal: req.signal,
     });
-    stream.completed.finally(() => releasePipelineLock(pid));
     console.log(`[API /narrative] Agent run started in ${Date.now() - streamStart}ms`);
 
     return createAiSdkUiMessageStreamResponse(stream);
   } catch (error) {
-    if (lockAcquired) releasePipelineLock(projectId!);
     if (req.signal.aborted) {
       console.log('[API /narrative] Request aborted after', Date.now() - startTime, 'ms');
       return NextResponse.json({ error: 'Request aborted' }, { status: 499 });

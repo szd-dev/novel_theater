@@ -10,7 +10,7 @@ export const gmAgent = new Agent({
   model: getModel('gm'),
   instructions: async (runContext) => {
     const { storyDir } = runContext.context as { storyDir: string };
-    const storyContext = await buildStoryContext(storyDir);
+    const storyContext = await buildStoryContext(storyDir, { excludeInteractionLog: true });
     return getGMPrompt({
       storyContext: storyContext ?? undefined,
     });

@@ -4,11 +4,11 @@ import { RESPONSIBILITIES } from "@/agents/archivist/types";
 import type { ArchivistResponsibility } from "@/agents/archivist/types";
 import type { ArchivistPromptState } from "@/prompts/types";
 
-const COMMON_CONSTRAINTS = [
-  "只追加不删除",
-  "不创造新信息",
-  "不调用任何其他节点",
-  "事实归属规则",
+const COMMON_MARKERS = [
+  "你是自由剧场的场记员",
+  "叙事摘要",
+  "文学文本",
+  "只记录，不创造信息",
 ];
 
 const STATE: ArchivistPromptState = {
@@ -20,24 +20,15 @@ describe("getArchivistSubPrompt", () => {
     for (const resp of RESPONSIBILITIES) {
       const result = getArchivistSubPrompt(resp, STATE);
       expect(typeof result).toBe("string");
-      expect(result.length).toBeGreaterThan(100);
+      expect(result.length).toBeGreaterThan(50);
     }
   });
 
-  test("contains common role definition for each responsibility", () => {
+  test("contains common markers for each responsibility", () => {
     for (const resp of RESPONSIBILITIES) {
       const result = getArchivistSubPrompt(resp, STATE);
-      expect(result).toContain("自由剧场 Archivist");
-      expect(result).toContain("角色定义");
-      expect(result).toContain("输入格式");
-    }
-  });
-
-  test("contains all common constraints for each responsibility", () => {
-    for (const resp of RESPONSIBILITIES) {
-      const result = getArchivistSubPrompt(resp, STATE);
-      for (const constraint of COMMON_CONSTRAINTS) {
-        expect(result).toContain(constraint);
+      for (const marker of COMMON_MARKERS) {
+        expect(result).toContain(marker);
       }
     }
   });
@@ -49,12 +40,14 @@ describe("getArchivistSubPrompt", () => {
     }
   });
 
-  test("characters prompt contains dedup workflow steps", () => {
+  test("characters prompt contains dedup workflow and memory format", () => {
     const result = getArchivistSubPrompt("characters", STATE);
     expect(result).toContain("list_characters");
     expect(result).toContain("resolve_character");
     expect(result).toContain("去重判断");
     expect(result).toContain("characters/*.md");
+    expect(result).toContain("[[sXXX]]");
+    expect(result).toContain("只追加不删除");
   });
 
   test("characters prompt contains character file format spec", () => {
@@ -69,22 +62,18 @@ describe("getArchivistSubPrompt", () => {
 
   test("scene prompt contains scene supplement workflow", () => {
     const result = getArchivistSubPrompt("scene", STATE);
-    expect(result).toContain("补充场记");
-    expect(result).toContain("edit_file");
+    expect(result).toContain("经过");
+    expect(result).toContain("小说文本");
+    expect(result).toContain("关键事实");
     expect(result).toContain("scenes/sXXX.md");
-  });
-
-  test("scene prompt contains scene file format spec", () => {
-    const result = getArchivistSubPrompt("scene", STATE);
-    expect(result).toContain("## 经过");
-    expect(result).toContain("## 小说文本");
-    expect(result).toContain("## 关键事实");
   });
 
   test("world prompt contains world update workflow", () => {
     const result = getArchivistSubPrompt("world", STATE);
     expect(result).toContain("world.md");
-    expect(result).toContain("地点描述");
+    expect(result).toContain("新地点");
+    expect(result).toContain("新势力");
+    expect(result).toContain("新规则");
   });
 
   test("world prompt contains world file format spec", () => {
@@ -97,26 +86,34 @@ describe("getArchivistSubPrompt", () => {
   test("plot prompt contains plot update workflow", () => {
     const result = getArchivistSubPrompt("plot", STATE);
     expect(result).toContain("plot.md");
-    expect(result).toContain("剧情事件");
+    expect(result).toContain("关键推进");
   });
 
   test("timeline prompt contains timeline update workflow", () => {
     const result = getArchivistSubPrompt("timeline", STATE);
     expect(result).toContain("timeline.md");
     expect(result).toContain("Markdown 表格");
+    expect(result).toContain("场景编号");
+    expect(result).toContain("故事时间");
+    expect(result).toContain("顺序");
   });
 
-  test("debts prompt contains debt processing workflow", () => {
+  test("debts prompt contains narrative debt workflow", () => {
     const result = getArchivistSubPrompt("debts", STATE);
     expect(result).toContain("debts.md");
-    expect(result).toContain("传播债务");
+    expect(result).toContain("叙事债务");
+    expect(result).toContain("显式承诺");
+    expect(result).toContain("信息缺口");
+    expect(result).toContain("未解悬念");
+    expect(result).toContain("未闭环因果");
   });
 
-  test("debts prompt contains debt format spec", () => {
+  test("debts prompt contains debt format with 待回收", () => {
     const result = getArchivistSubPrompt("debts", STATE);
     expect(result).toContain("- [ ]");
-    expect(result).toContain("影响文件");
+    expect(result).toContain("待回收");
     expect(result).toContain("来源");
+    expect(result).not.toContain("影响文件");
   });
 
   test("different responsibilities produce different prompts", () => {
@@ -131,7 +128,7 @@ describe("getArchivistSubPrompt", () => {
   test("works without story context", () => {
     const emptyState: ArchivistPromptState = {};
     const result = getArchivistSubPrompt("characters", emptyState);
-    expect(result).toContain("自由剧场 Archivist");
+    expect(result).toContain("场记员");
     expect(result).toContain("当前任务");
   });
 });

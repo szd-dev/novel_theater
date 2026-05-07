@@ -2,12 +2,10 @@ import { describe, test, expect } from "bun:test";
 import { getGMPrompt } from "@/prompts/gm";
 import { getActorPrompt } from "@/prompts/actor";
 import { getScribePrompt } from "@/prompts/scribe";
-import { getArchivistPrompt } from "@/prompts/archivist";
 import type {
   GMPromptState,
   ActorPromptState,
   ScribePromptState,
-  ArchivistPromptState,
 } from "@/prompts/types";
 
 const FORBIDDEN_PATTERNS = [
@@ -176,28 +174,5 @@ describe("getScribePrompt", () => {
     };
     const result = getScribePrompt(state);
     checkNoForbiddenPatterns(result, "Scribe");
-  });
-});
-
-describe("getArchivistPrompt", () => {
-  test("includes core archivist identity", () => {
-    const state: ArchivistPromptState = {};
-    const result = getArchivistPrompt(state);
-    expect(result).toContain("自由剧场 Archivist");
-    expect(result).toContain("edit_file");
-  });
-
-  test("includes story context when provided", () => {
-    const state: ArchivistPromptState = {
-      storyContext: "场景总数: 3，当前场景: s004",
-    };
-    const result = getArchivistPrompt(state);
-    expect(result).toContain("场景总数: 3，当前场景: s004");
-  });
-
-  test("no forbidden patterns", () => {
-    const state: ArchivistPromptState = {};
-    const result = getArchivistPrompt(state);
-    checkNoForbiddenPatterns(result, "Archivist");
   });
 });
