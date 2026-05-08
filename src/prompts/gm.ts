@@ -1,4 +1,5 @@
 import type { GMPromptState, PromptConfig } from "./types";
+import { getAntiReviewPrefix } from "./types";
 
 export function getGMPrompt(
   state: GMPromptState,
@@ -9,7 +10,7 @@ export function getGMPrompt(
   const stateBlock = buildStateBlock(state);
   const core = buildCorePrompt(lang);
 
-  return `${core}\n\n${stateBlock}`;
+  return `${getAntiReviewPrefix()}${core}\n\n${stateBlock}`;
 }
 
 function buildStateBlock(state: GMPromptState): string {

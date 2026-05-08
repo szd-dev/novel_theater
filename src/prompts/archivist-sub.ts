@@ -1,5 +1,6 @@
 import type { ArchivistResponsibility } from "@/agents/archivist/types";
 import type { ArchivistPromptState, PromptConfig } from "./types";
+import { getAntiReviewPrefix } from "./types";
 
 export function getArchivistSubPrompt(
   resp: ArchivistResponsibility,
@@ -11,7 +12,7 @@ export function getArchivistSubPrompt(
   const specific = RESPONSIBILITY_BLOCKS[resp];
   const stateBlock = buildStateBlock(state);
 
-  return `${common}\n\n${specific}\n\n${stateBlock}`;
+  return `${getAntiReviewPrefix()}${common}\n\n${specific}\n\n${stateBlock}`;
 }
 
 function buildStateBlock(state: ArchivistPromptState): string {

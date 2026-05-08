@@ -57,6 +57,7 @@ GM 和 Archivist 使用 Qwen（强 Agent / 工具调用能力），Actor 和 Scr
 | `PROJECT_DIR` | — | `.novel` | 故事文件目录名 |
 | `DATA_STORE_DIR` | — | `./.data_store` | 项目数据存储根目录 |
 | `DEBUG_PROMPTS` | — | — | 设为 `1` 启用 Agent 系统提示词日志 |
+| `ANTI_REVIEW_PROMPT` | — | — | 反审核提示词，非空时注入到所有 Agent 系统提示词最前面 |
 
 ## 故事文件
 

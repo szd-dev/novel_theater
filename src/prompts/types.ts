@@ -26,3 +26,9 @@ export interface ScribePromptState {
 export interface ArchivistPromptState {
   storyContext?: string; // from buildStoryContext()
 }
+
+/** ANTI_REVIEW_PROMPT env var → prepended to all agent system prompts if non-empty */
+export function getAntiReviewPrefix(): string {
+  const prefix = process.env.ANTI_REVIEW_PROMPT?.trim();
+  return prefix ? `${prefix}\n\n` : "";
+}

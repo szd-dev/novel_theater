@@ -1,4 +1,5 @@
 import type { ActorPromptState, PromptConfig } from "./types";
+import { getAntiReviewPrefix } from "./types";
 
 export function getActorPrompt(
   character: string,
@@ -9,7 +10,7 @@ export function getActorPrompt(
   const core = buildActorCore(lang);
   const stateBlock = buildActorStateBlock(character, state);
 
-  return `${core}\n\n${stateBlock}`;
+  return `${getAntiReviewPrefix()}${core}\n\n${stateBlock}`;
 }
 
 function buildActorStateBlock(character: string, state: ActorPromptState): string {

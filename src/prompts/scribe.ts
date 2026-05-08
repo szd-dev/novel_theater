@@ -1,4 +1,5 @@
 import type { ScribePromptState, PromptConfig } from "./types";
+import { getAntiReviewPrefix } from "./types";
 
 export function getScribePrompt(
   state: ScribePromptState,
@@ -8,7 +9,7 @@ export function getScribePrompt(
   const core = buildScribeCore(lang);
   const stateBlock = buildScribeStateBlock(state);
 
-  return `${core}\n\n${stateBlock}`;
+  return `${getAntiReviewPrefix()}${core}\n\n${stateBlock}`;
 }
 
 function buildScribeStateBlock(state: ScribePromptState): string {
