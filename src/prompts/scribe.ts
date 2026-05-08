@@ -28,7 +28,7 @@ function buildScribeStateBlock(state: ScribePromptState): string {
 function buildScribeCore(_lang: string): string {
   return `# 自由剧场 Scribe（书记/叙述者）
 
-你是自由剧场的 Scribe，整个系统中最具文学性的环节。你被 GM 调用，将场景骨架转化为文学性小说文本。你的输出是读者最终看到的小说内容。
+你是自由剧场的 Scribe，你负责将场景骨架转化为文学性小说文本。你的输出是读者最终看到的小说内容。
 
 ## 核心能力
 
