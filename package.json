@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.71",
+    "@ai-sdk/deepseek": "^2.0.34",
     "@ai-sdk/openai": "^3.0.53",
     "@ai-sdk/react": "^3.0.170",
     "@base-ui/react": "^1.4.1",
@@ -24,8 +25,8 @@
     "@lexical/list": "^0.44.0",
     "@lexical/plain-text": "^0.44.0",
     "@lexical/react": "^0.44.0",
-    "@openai/agents": "^0.8.5",
-    "@openai/agents-extensions": "^0.8.5",
+    "@openai/agents": "^0.11.0",
+    "@openai/agents-extensions": "^0.11.0",
     "ai": "^6.0.168",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

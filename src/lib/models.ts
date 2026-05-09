@@ -1,5 +1,6 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { createAnthropic } from "@ai-sdk/anthropic";
+import { createDeepSeek } from "@ai-sdk/deepseek";
 import { aisdk } from "@openai/agents-extensions/ai-sdk";
 import { setOpenAIAPI } from "@openai/agents-openai";
 import { setTracingDisabled } from "@openai/agents";
@@ -12,7 +13,7 @@ setTracingDisabled(true);
 export type AgentRole = "gm" | "actor" | "scribe" | "archivist";
 
 export interface ModelConfig {
-  provider: "openai" | "anthropic";
+  provider: "openai" | "anthropic" | "deepseek";
   model: string;
 }
 
@@ -20,15 +21,18 @@ function envModel(key: string, fallback: string): string {
   return process.env[key] || fallback;
 }
 
-function inferProvider(modelName: string): "openai" | "anthropic" {
+function inferProvider(modelName: string): "openai" | "anthropic" | "deepseek" {
   if (modelName.startsWith("claude-") || modelName.startsWith("anthropic:")) {
     return "anthropic";
+  }
+  if (modelName.startsWith("deepseek/") || modelName.startsWith("deepseek:")) {
+    return "deepseek";
   }
   return "openai";
 }
 
 function normalizeModelName(modelName: string): string {
-  return modelName.replace(/^anthropic:/, "");
+  return modelName.replace(/^(anthropic|deepseek):/, "");
 }
 
 function resolveModelConfig(role: AgentRole): ModelConfig {
@@ -55,6 +59,14 @@ function createModel(config: ModelConfig) {
   const baseURL = process.env.OPENAI_BASE_URL || undefined;
   if (config.provider === "anthropic") {
     const provider = createAnthropic(baseURL ? { baseURL } : undefined);
+    return provider(config.model);
+  }
+  if (config.provider === "deepseek") {
+    const provider = createDeepSeek(
+      baseURL
+        ? { baseURL, apiKey: process.env.OPENAI_API_KEY || "unset" }
+        : { apiKey: process.env.OPENAI_API_KEY || "unset" }
+    );
     return provider(config.model);
   }
   // .chat() forces /v1/chat/completions; default provider('model') uses /v1/responses
