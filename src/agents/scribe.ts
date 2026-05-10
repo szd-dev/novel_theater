@@ -1,5 +1,5 @@
 import { Agent } from '@openai/agents';
-import { getModel } from '@/lib/models';
+import { getModel, getModelSettings } from '@/lib/models';
 import { readFileTool, globFilesTool } from '@/tools/file-tools';
 import { getScribePrompt } from '@/prompts/scribe';
 import { buildStoryContext } from '@/context/build-story-context';
@@ -8,6 +8,7 @@ import { readNovelFile } from '@/store/story-files';
 export const scribeAgent = new Agent({
   name: 'Scribe',
   model: getModel('scribe'),
+  modelSettings: getModelSettings('scribe'),
   instructions: async (runContext) => {
     const { storyDir } = runContext.context as { storyDir: string };
     const storyContext = await buildStoryContext(storyDir);

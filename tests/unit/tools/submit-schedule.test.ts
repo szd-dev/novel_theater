@@ -11,6 +11,12 @@ import {
   _resetSetToolProgress,
   _setClearToolProgress,
   _resetClearToolProgress,
+  _setFindLatestScene,
+  _resetFindLatestScene,
+  _setReadNovelFile,
+  _resetReadNovelFile,
+  _setWriteNovelFile,
+  _resetWriteNovelFile,
 } from '@/tools/submit-schedule';
 
 const schedule = [
@@ -22,6 +28,9 @@ const mockRunEnactPhase = jest.fn();
 const mockRunScribeAndArchivist = jest.fn();
 const mockSetToolProgress = jest.fn();
 const mockClearToolProgress = jest.fn();
+const mockFindLatestScene = jest.fn();
+const mockReadNovelFile = jest.fn();
+const mockWriteNovelFile = jest.fn();
 
 function makeRunContext(overrides: Partial<{
   projectId: string;
@@ -44,6 +53,9 @@ beforeEach(() => {
   mockRunScribeAndArchivist.mockReset();
   mockSetToolProgress.mockReset();
   mockClearToolProgress.mockReset();
+  mockFindLatestScene.mockReset();
+  mockReadNovelFile.mockReset();
+  mockWriteNovelFile.mockReset();
 
   mockRunEnactPhase.mockImplementation(async (_schedule, _storyDir, _projectId, _projectDir, opts) => {
     if (opts?.onProgress) {
@@ -98,10 +110,17 @@ beforeEach(() => {
     return { scribeOutput: '文学化的叙事文本', archivistDone: true };
   });
 
+  mockFindLatestScene.mockImplementation(async () => 's001.md');
+  mockReadNovelFile.mockImplementation(async () => '# 场景 s001\n## 地点\n酒馆\n## 时间\n清晨\n');
+  mockWriteNovelFile.mockImplementation(async () => {});
+
   _setRunEnactPhase(mockRunEnactPhase);
   _setRunScribeAndArchivist(mockRunScribeAndArchivist);
   _setSetToolProgress(mockSetToolProgress);
   _setClearToolProgress(mockClearToolProgress);
+  _setFindLatestScene(mockFindLatestScene);
+  _setReadNovelFile(mockReadNovelFile);
+  _setWriteNovelFile(mockWriteNovelFile);
 });
 
 describe('submitScheduleTool', () => {

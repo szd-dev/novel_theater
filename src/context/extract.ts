@@ -183,3 +183,15 @@ export async function findLatestScene(dir: string): Promise<string | null> {
 
   return entries[0].replace("scenes/", "");
 }
+
+export const SCENE_COMPLETION_MARKER = "<!-- 场景完结 -->";
+
+export function hasCompletionMarker(content: string): boolean {
+  return content.includes(SCENE_COMPLETION_MARKER);
+}
+
+export function getNextSceneName(latestScene: string): string {
+  const match = latestScene.match(/(\d+)/);
+  const num = match ? parseInt(match[1], 10) : 0;
+  return `s${String(num + 1).padStart(3, '0')}.md`;
+}

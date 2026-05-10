@@ -2,6 +2,7 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createDeepSeek } from "@ai-sdk/deepseek";
 import { aisdk } from "@openai/agents-extensions/ai-sdk";
+import type { ModelSettings } from "@openai/agents-core/model";
 import { setOpenAIAPI } from "@openai/agents-openai";
 import { setTracingDisabled } from "@openai/agents";
 
@@ -77,4 +78,24 @@ function createModel(config: ModelConfig) {
 export function getModel(role: AgentRole) {
   const config = resolveModelConfig(role);
   return aisdk(createModel(config));
+}
+
+/**
+ * Returns model settings with provider-specific configuration.
+ * DeepSeek V4 models require thinking to be explicitly marked as enabled
+ * so the aisdk bridge correctly merges reasoning_content with tool_calls
+ * in multi-turn conversations.
+ */
+export function getModelSettings(role: AgentRole): ModelSettings {
+  const config = resolveModelConfig(role);
+  if (config.provider === "deepseek") {
+    return {
+      providerData: {
+        deepseek: {
+          thinking: { type: "enabled" as const },
+        },
+      },
+    };
+  }
+  return {};
 }

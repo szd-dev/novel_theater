@@ -1,5 +1,5 @@
 import { Agent } from '@openai/agents';
-import { getModel } from '@/lib/models';
+import { getModel, getModelSettings } from '@/lib/models';
 import { resolveCharacterTool } from '@/tools/character-tools';
 import { readFileTool, globFilesTool } from '@/tools/file-tools';
 import { getActorPrompt } from '@/prompts/actor';
@@ -9,6 +9,7 @@ import { buildStoryContext } from '@/context/build-story-context';
 export const actorAgent = new Agent({
   name: 'Actor',
   model: getModel('actor'),
+  modelSettings: getModelSettings('actor'),
   instructions: async (runContext) => {
     const { storyDir, characterName } = runContext.context as { storyDir: string; characterName?: string };
 
