@@ -5,6 +5,8 @@ import { aisdk } from "@openai/agents-extensions/ai-sdk";
 import type { ModelSettings } from "@openai/agents-core/model";
 import { setOpenAIAPI } from "@openai/agents-openai";
 import { setTracingDisabled } from "@openai/agents";
+import { wrapLanguageModel } from "ai";
+import { createDebugMiddleware } from "@/lib/ai-debug-middleware";
 
 // Our provider only supports /v1/chat/completions, not /v1/responses.
 // createOpenAI()('model') defaults to responses API, must use .chat() for chat-completions.
@@ -77,7 +79,14 @@ function createModel(config: ModelConfig) {
 
 export function getModel(role: AgentRole) {
   const config = resolveModelConfig(role);
-  return aisdk(createModel(config));
+  const langModel = createModel(config);
+  const wrapped = process.env.DEBUG_AI_ROUNDS
+    ? wrapLanguageModel({
+        model: langModel,
+        middleware: createDebugMiddleware(config.model),
+      })
+    : langModel;
+  return aisdk(wrapped);
 }
 
 /**

@@ -53,7 +53,7 @@ async function runArchivistDag(
     const charactersResult = await run(
       charactersAgent,
       charactersPrompt,
-      { context: { storyDir } },
+      { context: { storyDir }, maxTurns: 10 },
     );
     logAgentResult('Archivist-Characters', charactersResult, charStartTime);
   } catch (error) {
