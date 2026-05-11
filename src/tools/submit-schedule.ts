@@ -88,10 +88,12 @@ export const submitScheduleTool = tool({
       projectId?: string;
       projectDir?: string;
       storyDir?: string;
+      abortSignal?: AbortSignal;
     };
     const projectId = ctx.projectId!;
     const projectDir = ctx.projectDir!;
     const storyDir = ctx.storyDir ?? join(projectDir, '.novel');
+    const abortSignal = ctx.abortSignal;
     const { schedule, narrativeSummary } = input;
     const callId = details?.toolCall?.callId ?? `pipeline-${projectId}-${Date.now()}`;
     const total = schedule.length + 5;
@@ -120,13 +122,18 @@ export const submitScheduleTool = tool({
         storyDir,
         projectId,
         projectDir,
-        { onProgress, totalSteps: total },
+        { onProgress, totalSteps: total, abortSignal },
       );
+
+      if (abortSignal?.aborted) {
+        clearToolProgress(projectId, callId);
+        return toolError("流水线已取消");
+      }
 
       const saResult = await runScribeAndArchivist(
         narrativeSummary,
         storyDir,
-        { onProgress, totalSteps: total },
+        { onProgress, totalSteps: total, abortSignal },
       );
 
       // 后置标记：追加完结标记到最新场景

@@ -48,7 +48,7 @@ export async function runEnactPhase(
   storyDir: string,
   projectId: string,
   projectDir: string,
-  opts?: { onProgress?: (progress: ToolProgress) => void; totalSteps: number },
+  opts?: { onProgress?: (progress: ToolProgress) => void; totalSteps: number; abortSignal?: AbortSignal },
 ): Promise<EnactResult> {
   console.log(`[Pipeline] Enact phase: ${schedule.length} step(s)`);
   clearInteractionLog(storyDir);
@@ -57,6 +57,11 @@ export async function runEnactPhase(
   const steps: EnactStep[] = [];
 
   for (const [i, step] of schedule.entries()) {
+    if (opts?.abortSignal?.aborted) {
+      console.log(`[Pipeline] Enact phase aborted before "${step.character}"`);
+      break;
+    }
+
     const startTime = Date.now();
     console.log(`[Pipeline] Actor "${step.character}" starting`);
 
@@ -83,6 +88,7 @@ export async function runEnactPhase(
           context: { storyDir, characterName: step.character },
           session: sessionEntry.session,
           maxTurns: 10,
+          signal: opts?.abortSignal,
         },
       );
 

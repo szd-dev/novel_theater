@@ -44,6 +44,7 @@ async function runArchivistDag(
   storyDir: string,
   onProgress?: (progress: ToolProgress) => void,
   totalSteps?: number,
+  abortSignal?: AbortSignal,
 ): Promise<void> {
   const charactersPrompt = `${narrativeSummary}\n\n## 文学文本\n${literaryText}`;
 
@@ -53,7 +54,7 @@ async function runArchivistDag(
     const charactersResult = await run(
       charactersAgent,
       charactersPrompt,
-      { context: { storyDir }, maxTurns: 10 },
+      { context: { storyDir }, maxTurns: 10, signal: abortSignal },
     );
     logAgentResult('Archivist-Characters', charactersResult, charStartTime);
   } catch (error) {
@@ -82,7 +83,7 @@ async function runArchivistDag(
   console.log(`[Pipeline] Archivist parallel (Scene/World/Plot/Timeline) starting`);
 
   const parallelResults = await Promise.allSettled(
-    parallelAgents.map(({ agent }) => run(agent, charactersPrompt, { context: { storyDir } })),
+    parallelAgents.map(({ agent }) => run(agent, charactersPrompt, { context: { storyDir }, signal: abortSignal })),
   );
 
   parallelResults.forEach((result, i) => {
@@ -110,7 +111,7 @@ async function runArchivistDag(
     const debtsResult = await run(
       debtsAgent,
       charactersPrompt,
-      { context: { storyDir } },
+      { context: { storyDir }, signal: abortSignal },
     );
     logAgentResult('Archivist-Debts', debtsResult, debtsStartTime);
   } catch (error) {
@@ -135,6 +136,7 @@ export async function runScribeAndArchivist(
   opts?: {
     onProgress?: (progress: ToolProgress) => void;
     totalSteps: number;
+    abortSignal?: AbortSignal;
   },
 ): Promise<ScribeArchivistResult> {
   const startTime = Date.now();
@@ -148,6 +150,7 @@ export async function runScribeAndArchivist(
       {
         context: { storyDir },
         maxTurns: 25,
+        signal: opts?.abortSignal,
       },
     );
     logAgentResult('Scribe', scribeResult, startTime);
@@ -167,7 +170,11 @@ export async function runScribeAndArchivist(
     );
   }
 
-  await runArchivistDag(narrativeSummary, scribeOutput, storyDir, opts?.onProgress, opts?.totalSteps);
+  if (opts?.abortSignal?.aborted) {
+    return { scribeOutput, archivistDone: false };
+  }
+
+  await runArchivistDag(narrativeSummary, scribeOutput, storyDir, opts?.onProgress, opts?.totalSteps, opts?.abortSignal);
 
   return { scribeOutput, archivistDone: true };
 }

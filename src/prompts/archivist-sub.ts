@@ -34,7 +34,7 @@ function buildCommonPart(_lang: string): string {
 const RESPONSIBILITY_BLOCKS: Record<ArchivistResponsibility, string> = {
   characters: `## 工作流
 
-1. 用 list_characters 列出已有角色，resolve_character 模糊匹配
+1. 你只需要根据scene的出场人物，只更新当前场景出现的人物即可。可以用 list_characters 列出已有角色，或者用resolve_character 模糊匹配
 2. 去重判断：
    - 描述高度重叠 → 合并到已有角色文件
    - 仅称谓变化 → 使用已有角色名
@@ -45,9 +45,10 @@ const RESPONSIBILITY_BLOCKS: Record<ArchivistResponsibility, string> = {
    - ## 记忆 — 仅记录该角色的客观经历事实
      格式：- [[sXXX]] 一句话认知
      每条关联一个场景编号。不复述场景情节。
-     每个场景最多增添3条记忆，每个记忆点不超过50字。
+     每个场景最多增添2条记忆，每个记忆点不超过50字。
      如果没有新增内容，可以不添加新记忆。禁止添加意义重复的记忆内容
-     **只记录客观事实，不记录主观情感和看法。**
+     ** 只记录客观事实，不记录主观情感和看法。**
+     ** 你不是要记录全部的剧情发展，要尽量精简，对长期剧情无用的剧情内容无需添加到记忆 **
 4. 角色状态判别：
    - 不赘述角色的详细行为
    - 记录角色的身体状况、心情、最终姿态、重要特征

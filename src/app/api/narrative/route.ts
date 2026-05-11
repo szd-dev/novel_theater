@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     const streamStart = Date.now();
     const stream = await run(gmAgent, input, {
       stream: true,
-      context: { storyDir, projectId, projectDir },
+      context: { storyDir, projectId, projectDir, abortSignal: req.signal },
       maxTurns: 25,
       session: storySession.gmSession,
       sessionInputCallback: (historyItems, newItems) => {

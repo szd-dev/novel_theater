@@ -4,7 +4,7 @@ import { createDeepSeek } from "@ai-sdk/deepseek";
 import { aisdk } from "@openai/agents-extensions/ai-sdk";
 import type { ModelSettings } from "@openai/agents-core/model";
 import { setOpenAIAPI } from "@openai/agents-openai";
-import { setTracingDisabled } from "@openai/agents";
+import { retryPolicies, setTracingDisabled } from "@openai/agents";
 import { wrapLanguageModel } from "ai";
 import { createDebugMiddleware } from "@/lib/ai-debug-middleware";
 
@@ -97,8 +97,23 @@ export function getModel(role: AgentRole) {
  */
 export function getModelSettings(role: AgentRole): ModelSettings {
   const config = resolveModelConfig(role);
+
+  const baseSettings: ModelSettings = {
+    retry: {
+      maxRetries: 3,
+      backoff: {
+        initialDelayMs: 1000,
+        maxDelayMs: 10000,
+        multiplier: 2,
+        jitter: true,
+      },
+      policy: retryPolicies.networkError(),
+    },
+  };
+
   if (config.provider === "deepseek") {
     return {
+      ...baseSettings,
       providerData: {
         deepseek: {
           thinking: { type: "enabled" as const },
@@ -106,5 +121,5 @@ export function getModelSettings(role: AgentRole): ModelSettings {
       },
     };
   }
-  return {};
+  return baseSettings;
 }
