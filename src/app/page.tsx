@@ -110,13 +110,13 @@ function ProjectChat({ projectId, onProjectSelect }: ProjectChatProps) {
     <SheetContentProvider setSheetContent={setSheetContent}>
     <ToolProgressProvider toolProgress={statusData.toolProgress}>
     <div className="flex h-dvh flex-col bg-background text-foreground">
-      <header className="flex shrink-0 items-center gap-3 px-4 py-3">
+      <header className="flex shrink-0 items-center gap-3 border-b border-sidebar-border px-4 py-3">
         <h1 className="text-lg font-semibold tracking-tight">自由剧场</h1>
         <span className="text-xs text-muted-foreground">Free Theater</span>
       </header>
       <Separator />
       <div className="flex min-h-0 flex-1 flex-row">
-        <aside className="flex min-h-0 w-56 shrink-0 flex-col gap-2 overflow-hidden border-r border-border py-2">
+        <aside className="bg-sidebar text-sidebar-foreground flex min-h-0 w-56 shrink-0 flex-col gap-2 overflow-hidden border-r border-sidebar-border py-2">
           <ProjectSelector
             currentProjectId={projectId}
             onProjectSelect={onProjectSelect}

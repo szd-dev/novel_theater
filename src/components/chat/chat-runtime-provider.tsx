@@ -5,6 +5,48 @@ import { AssistantRuntimeProvider } from "@assistant-ui/react";
 import { useChatRuntime, AssistantChatTransport } from "@assistant-ui/react-ai-sdk";
 import type { UIMessage } from "ai";
 import { createHistoryAdapter } from "./history-adapter";
+
+/**
+ * Detects failed tool calls encoded as `{"ok":false,...}` in the output
+ * and fixes their state to `output-error` so the AI SDK converter
+ * properly marks them with `isError: true`.
+ */
+function fixToolErrorStates(message: UIMessage): UIMessage {
+  return {
+    ...message,
+    parts: message.parts?.map((part) => {
+      if (
+        part.type === "dynamic-tool" &&
+        part.state === "output-available" &&
+        part.output
+      ) {
+        try {
+          const parsed = JSON.parse(part.output as string);
+          if (
+            parsed &&
+            typeof parsed === "object" &&
+            "ok" in parsed &&
+            parsed.ok === false
+          ) {
+            return {
+              ...part,
+              output: undefined,
+              state: "output-error" as const,
+              errorText:
+                typeof parsed.error === "string"
+                  ? parsed.error
+                  : undefined,
+            };
+          }
+        } catch {
+          // Not JSON output — keep as-is
+        }
+      }
+      return part;
+    }),
+  };
+}
+
 interface ChatRuntimeProviderProps {
   children: React.ReactNode;
   projectId: string;
@@ -53,7 +95,7 @@ export function ChatRuntimeProvider({ children, projectId }: ChatRuntimeProvider
     fetch(`/api/narrative?projectId=${projectId}`)
       .then((res) => res.json())
       .then((data) => {
-        if (!cancelled) setInitialMessages(data.messages ?? []);
+        if (!cancelled) setInitialMessages((data.messages ?? []).map(fixToolErrorStates));
       })
       .catch((err) => {
         console.error("[Chat] Failed to load history:", err);

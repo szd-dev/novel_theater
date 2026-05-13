@@ -5,7 +5,6 @@ import type { UIMessage } from "ai";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { AgentLabel } from "@/components/chat/agent-label";
-import { ToolTag } from "@/components/chat/tool-tag";
 import { splitBySteps } from "@/components/chat/message-segments";
 import { toolNameToAgentKey } from "@/components/chat/tool-meta";
 import { isDynamicToolPart, type ToolClickPayload } from "@/components/chat/types";
@@ -37,7 +36,6 @@ function extractAgentLabel(message: UIMessage): string | null {
 
 interface SeparatedParts {
   textParts: ReactElement[];
-  toolParts: ReactElement[];
 }
 
 function separateParts(
@@ -46,15 +44,6 @@ function separateParts(
   onToolClick?: (tool: ToolClickPayload) => void
 ): SeparatedParts {
   const textParts: ReactElement[] = [];
-  const toolParts: ReactElement[] = [];
-
-  // Build result map keyed by toolCallId for pairing tool-call with tool-result
-  const resultMap = new Map<string, unknown>();
-  for (const part of parts) {
-    if (part.type === "tool-result") {
-      resultMap.set((part as any).toolCallId as string, (part as any).output);
-    }
-  }
 
   parts.forEach((part, i) => {
     if (part.type === "text") {
@@ -65,111 +54,10 @@ function separateParts(
           {text}
         </span>
       );
-    } else if (isDynamicToolPart(part)) {
-      toolParts.push(
-        <ToolTag
-          key={part.toolCallId ?? `tool-${i}`}
-          toolName={part.toolName ?? ""}
-          state={part.state ?? "input-streaming"}
-          input={part.input}
-          progress={toolProgress?.[part.toolCallId ?? ""]}
-          onClick={
-            onToolClick
-              ? () =>
-                  onToolClick({
-                    toolName: part.toolName ?? "",
-                    input: part.input,
-                    output: part.output,
-                    error: part.error,
-                    state: part.state,
-                  })
-              : () => {}
-          }
-        />
-      );
-    } else if (part.type === "tool-call") {
-      const toolCallId = (part as any).toolCallId as string;
-      const toolName = (part as any).toolName as string;
-      const input = (part as any).input as Record<string, unknown> | undefined;
-      const output = resultMap.get(toolCallId);
-      const outputStr =
-        typeof output === "string"
-          ? output
-          : output &&
-              typeof output === "object" &&
-              "value" in (output as any)
-            ? String((output as any).value)
-            : output
-              ? JSON.stringify(output)
-              : undefined;
-
-      toolParts.push(
-        <ToolTag
-          key={toolCallId}
-          toolName={toolName}
-          state={outputStr ? "output-available" : "input-available"}
-          input={input}
-          onClick={
-            onToolClick
-              ? () =>
-                  onToolClick({
-                    toolName,
-                    input,
-                    output: outputStr,
-                    state: outputStr
-                      ? "output-available"
-                      : "input-available",
-                  })
-              : () => {}
-          }
-        />
-      );
     }
   });
 
-  // Handle orphan tool-result parts (no matching tool-call)
-  for (const part of parts) {
-    if (part.type === "tool-result") {
-      const toolCallId = (part as any).toolCallId as string;
-      const toolName = (part as any).toolName as string;
-      const output = (part as any).output;
-      const outputStr =
-        typeof output === "string"
-          ? output
-          : output &&
-              typeof output === "object" &&
-              "value" in (output as any)
-            ? String((output as any).value)
-            : output
-              ? JSON.stringify(output)
-              : "完成";
-
-      const wasPaired = parts.some(
-        (p) => p.type === "tool-call" && (p as any).toolCallId === toolCallId
-      );
-      if (!wasPaired) {
-        toolParts.push(
-          <ToolTag
-            key={`result-${toolCallId}`}
-            toolName={toolName}
-            state="output-available"
-            onClick={
-              onToolClick
-                ? () =>
-                    onToolClick({
-                      toolName,
-                      output: outputStr,
-                      state: "output-available",
-                    })
-                : () => {}
-            }
-          />
-        );
-      }
-    }
-  }
-
-  return { textParts, toolParts };
+  return { textParts };
 }
 
 export function MessageItem({ message, onToolClick, toolProgress }: MessageItemProps) {
@@ -178,7 +66,7 @@ export function MessageItem({ message, onToolClick, toolProgress }: MessageItemP
   const segments = !isUser ? splitBySteps(message) : [];
 
   if (isUser || segments.length <= 1) {
-    const { textParts, toolParts } = separateParts(
+    const { textParts } = separateParts(
       message.parts,
       toolProgress,
       !isUser ? onToolClick : undefined
@@ -187,7 +75,7 @@ export function MessageItem({ message, onToolClick, toolProgress }: MessageItemP
     return (
       <div
         className={cn(
-          "flex w-full flex-col gap-1",
+          "flex w-full flex-col gap-4",
           isUser ? "items-end" : "items-start"
         )}
       >
@@ -210,31 +98,25 @@ export function MessageItem({ message, onToolClick, toolProgress }: MessageItemP
             {textParts}
           </div>
         )}
-        {toolParts.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">{toolParts}</div>
-        )}
       </div>
     );
   }
 
   return (
-    <div className="flex w-full flex-col items-start gap-2">
+    <div className="flex w-full flex-col items-start gap-4">
       {segments.map((segment, i) => {
-        const { textParts, toolParts } = separateParts(
+        const { textParts } = separateParts(
           segment.parts,
           toolProgress,
           onToolClick
         );
         return (
-          <div key={i} className="flex flex-col gap-1">
+          <div key={i} className="flex flex-col gap-2">
             <AgentLabel agent={segment.agent} />
             {textParts.length > 0 && (
               <div className="max-w-[80%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed bg-muted text-foreground">
                 {textParts}
               </div>
-            )}
-            {toolParts.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">{toolParts}</div>
             )}
           </div>
         );

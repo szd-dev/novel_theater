@@ -5,6 +5,7 @@ import {
 } from "@/components/assistant-ui/attachment";
 import { MarkdownText } from "@/components/assistant-ui/markdown-text";
 import { ToolFallback } from "@/components/assistant-ui/tool-fallback";
+import { ToolGroupRoot, ToolGroupTrigger, ToolGroupContent } from "@/components/assistant-ui/tool-group";
 import { TooltipIconButton } from "@/components/assistant-ui/tooltip-icon-button";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -219,13 +220,35 @@ const AssistantMessage: FC = () => {
         data-slot="aui_assistant-message-content"
         className="wrap-break-word px-2 text-foreground leading-relaxed"
       >
-<MessagePrimitive.Parts>
-          {({ part }) => {
+<MessagePrimitive.GroupedParts
+          groupBy={(part) => {
+            const type = (part as Record<string, unknown>).type as string;
+            if (type === "dynamic-tool" || type === "tool-call") {
+              return ["group-tool"];
+            }
+            return null;
+          }}
+        >
+          {({ part, children }) => {
             const rawType = (part as Record<string, unknown>).type as string;
 
             if (rawType === "step-start") {
               agentRef.current = "gm";
               return <StepDivider />;
+            }
+
+            if (rawType === "group-tool") {
+              const indices = (part as any).indices as number[] | undefined;
+              const count = indices?.length ?? 0;
+              if (count === 0) return null;
+              return (
+                <ToolGroupRoot className="my-4">
+                  <ToolGroupTrigger count={count} />
+                  <ToolGroupContent>
+                    <div className="flex flex-col gap-2">{children}</div>
+                  </ToolGroupContent>
+                </ToolGroupRoot>
+              );
             }
 
             if (rawType === "dynamic-tool") {
@@ -236,16 +259,9 @@ const AssistantMessage: FC = () => {
               const changed = agent !== agentRef.current;
               agentRef.current = agent;
               return (
-                <div className="flex flex-col gap-1.5">
-                  {(changed || toolName) && (
-                    <div className="flex items-center gap-2">
-                      <AgentLabel agent={agent} />
-                      {toolName && (
-                        <span className="text-muted-foreground text-xs">
-                          {toolName}
-                        </span>
-                      )}
-                    </div>
+                <div className="flex flex-col gap-1">
+                  {changed && (
+                    <AgentLabel agent={agent} />
                   )}
                   <DynamicToolDisplay
                     dp={part as unknown as DynamicToolPart}
@@ -294,7 +310,7 @@ const AssistantMessage: FC = () => {
 
             return null;
           }}
-        </MessagePrimitive.Parts>
+        </MessagePrimitive.GroupedParts>
         <MessageError />
       </div>
 
@@ -439,6 +455,19 @@ const PHASE_ICONS: Record<string, React.ElementType> = {
   archivist: Package,
 };
 
+function parseOutputError(output?: string): string | null {
+  if (!output) return null;
+  try {
+    const parsed = JSON.parse(output);
+    if (parsed && typeof parsed === "object" && "ok" in parsed && parsed.ok === false) {
+      return typeof parsed.error === "string" ? parsed.error : "工具执行失败";
+    }
+  } catch {
+    // Not JSON or unparseable
+  }
+  return null;
+}
+
 function DynamicToolDisplay({ dp }: DynamicToolDisplayProps) {
   const { state, errorText, toolName, toolCallId, input, output } = dp;
   const meta = getToolMeta(toolName ?? "unknown");
@@ -446,19 +475,14 @@ function DynamicToolDisplay({ dp }: DynamicToolDisplayProps) {
   const toolProgress = useToolProgress();
 
   const isRunning = state === "input-streaming" || state === "input-available";
-  const isError = state === "output-error";
-  const isComplete = state === "output-available";
+  const outputError = parseOutputError(output);
+  const isError = state === "output-error" || outputError !== null;
+  const errorMessage = errorText ?? outputError;
+  const isComplete = state === "output-available" && !isError;
 
   if (!isRunning && !isComplete && !isError) return null;
 
   const Icon = TOOL_ICON_MAP[meta.icon] ?? Wrench;
-  const accentColor = isError ? "#EF4444" : isComplete ? "#10B981" : meta.color;
-
-  const labelText = isRunning
-    ? `${meta.label} 执行中...`
-    : isError
-      ? `错误${errorText ? ` ${errorText}` : ""}`
-      : meta.label;
 
   const handleClick = () => {
     setSheetContent({
@@ -466,10 +490,42 @@ function DynamicToolDisplay({ dp }: DynamicToolDisplayProps) {
       toolName: toolName ?? "unknown",
       input,
       output,
-      error: errorText,
-      state,
+      error: errorMessage ?? undefined,
+      state: isError ? "output-error" : state,
     });
   };
+
+  // Error state: render error card
+  if (isError) {
+    return (
+      <div
+        className="flex flex-col gap-1 cursor-pointer rounded-lg border border-destructive/20 bg-destructive/5 p-2.5"
+        onClick={handleClick}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") handleClick();
+        }}
+      >
+        <div className="flex items-center gap-1.5">
+          <span className="size-1.5 shrink-0 rounded-full bg-red-500" />
+          <Icon className="size-3 shrink-0 text-destructive" />
+          <span className="text-xs font-medium text-destructive">
+            {meta.label} 执行失败
+          </span>
+        </div>
+        {errorMessage && (
+          <p className="text-xs text-muted-foreground pl-5">{errorMessage}</p>
+        )}
+      </div>
+    );
+  }
+
+  const accentColor = isComplete ? "#10B981" : meta.color;
+
+  const labelText = isRunning
+    ? `${meta.label} 执行中...`
+    : meta.label;
 
   let progressBar = null;
   if (toolName === "submit_schedule" && isRunning && toolCallId) {

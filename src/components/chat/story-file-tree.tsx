@@ -148,8 +148,8 @@ export const StoryFileTree = forwardRef<StoryFileTreeRef, StoryFileTreeProps>(fu
               key={file}
               onClick={() => onFileSelect(file)}
               className={cn(
-                "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm cursor-pointer hover:bg-muted",
-                selectedFilePath === file && "bg-muted font-medium",
+                "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm cursor-pointer transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                selectedFilePath === file && "bg-sidebar-accent font-medium text-sidebar-accent-foreground",
               )}
             >
               <span className="shrink-0">{FILE_TYPE_ICONS[file] || DEFAULT_FILE_ICON}</span>
@@ -164,7 +164,7 @@ export const StoryFileTree = forwardRef<StoryFileTreeRef, StoryFileTreeProps>(fu
               open={openDirs.has(dir.name)}
               onOpenChange={(open) => toggleDir(dir.name, open)}
             >
-              <CollapsibleTrigger className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium cursor-pointer hover:bg-muted">
+              <CollapsibleTrigger className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm font-medium cursor-pointer transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
                 <ChevronRight
                   className={cn(
                     "size-3 shrink-0 transition-transform",
@@ -185,8 +185,8 @@ export const StoryFileTree = forwardRef<StoryFileTreeRef, StoryFileTreeProps>(fu
                         key={file}
                         onClick={() => onFileSelect(file)}
                         className={cn(
-                          "flex w-full items-center gap-2 rounded-md pl-7 pr-2 py-1.5 text-sm cursor-pointer hover:bg-muted",
-                          selectedFilePath === file && "bg-muted font-medium",
+                          "flex w-full items-center gap-2 rounded-md pl-8 pr-2 py-1.5 text-sm cursor-pointer transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                          selectedFilePath === file && "bg-sidebar-accent font-medium text-sidebar-accent-foreground",
                         )}
                       >
                         <span className="shrink-0">{DEFAULT_FILE_ICON}</span>

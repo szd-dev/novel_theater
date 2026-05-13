@@ -141,8 +141,8 @@ export function ProjectSelector({
               <div
                 key={project.id}
                 className={cn(
-                  "group flex items-center justify-between rounded-md px-2 py-1.5 text-sm cursor-pointer hover:bg-muted",
-                  project.id === currentProjectId && "bg-muted font-medium",
+                  "group flex items-center justify-between rounded-md px-2 py-1.5 text-sm cursor-pointer transition-colors duration-150 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                  project.id === currentProjectId && "bg-sidebar-accent font-medium text-sidebar-accent-foreground border-l-2 border-primary",
                 )}
                 onClick={() => onProjectSelect(project.id)}
               >
