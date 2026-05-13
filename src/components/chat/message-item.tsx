@@ -48,6 +48,14 @@ function separateParts(
   const textParts: ReactElement[] = [];
   const toolParts: ReactElement[] = [];
 
+  // Build result map keyed by toolCallId for pairing tool-call with tool-result
+  const resultMap = new Map<string, unknown>();
+  for (const part of parts) {
+    if (part.type === "tool-result") {
+      resultMap.set((part as any).toolCallId as string, (part as any).output);
+    }
+  }
+
   parts.forEach((part, i) => {
     if (part.type === "text") {
       const text = part.text;
@@ -79,8 +87,87 @@ function separateParts(
           }
         />
       );
+    } else if (part.type === "tool-call") {
+      const toolCallId = (part as any).toolCallId as string;
+      const toolName = (part as any).toolName as string;
+      const input = (part as any).input as Record<string, unknown> | undefined;
+      const output = resultMap.get(toolCallId);
+      const outputStr =
+        typeof output === "string"
+          ? output
+          : output &&
+              typeof output === "object" &&
+              "value" in (output as any)
+            ? String((output as any).value)
+            : output
+              ? JSON.stringify(output)
+              : undefined;
+
+      toolParts.push(
+        <ToolTag
+          key={toolCallId}
+          toolName={toolName}
+          state={outputStr ? "output-available" : "input-available"}
+          input={input}
+          onClick={
+            onToolClick
+              ? () =>
+                  onToolClick({
+                    toolName,
+                    input,
+                    output: outputStr,
+                    state: outputStr
+                      ? "output-available"
+                      : "input-available",
+                  })
+              : () => {}
+          }
+        />
+      );
     }
   });
+
+  // Handle orphan tool-result parts (no matching tool-call)
+  for (const part of parts) {
+    if (part.type === "tool-result") {
+      const toolCallId = (part as any).toolCallId as string;
+      const toolName = (part as any).toolName as string;
+      const output = (part as any).output;
+      const outputStr =
+        typeof output === "string"
+          ? output
+          : output &&
+              typeof output === "object" &&
+              "value" in (output as any)
+            ? String((output as any).value)
+            : output
+              ? JSON.stringify(output)
+              : "完成";
+
+      const wasPaired = parts.some(
+        (p) => p.type === "tool-call" && (p as any).toolCallId === toolCallId
+      );
+      if (!wasPaired) {
+        toolParts.push(
+          <ToolTag
+            key={`result-${toolCallId}`}
+            toolName={toolName}
+            state="output-available"
+            onClick={
+              onToolClick
+                ? () =>
+                    onToolClick({
+                      toolName,
+                      output: outputStr,
+                      state: "output-available",
+                    })
+                : () => {}
+            }
+          />
+        );
+      }
+    }
+  }
 
   return { textParts, toolParts };
 }

@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo, useRef } from "react";
-import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport, type UIMessage } from "ai";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { useAuiState, useAui, useAuiEvent } from "@assistant-ui/react";
+import type { ChatStatus } from "ai";
 import { ProjectSelector } from "@/components/chat/project-selector";
 import { StoryFileTree, type StoryFileTreeRef } from "@/components/chat/story-file-tree";
-import { MessageList } from "@/components/chat/message-list";
-import { ChatInput } from "@/components/chat/chat-input";
+import { Thread } from "@/components/assistant-ui/thread";
 import type { MentionData } from "@/components/chat/chat-input/utils";
 import { SceneIndicator } from "@/components/chat/scene-indicator";
 import { Separator } from "@/components/ui/separator";
@@ -15,16 +14,13 @@ import {
   SheetContent as SheetContentUI,
 } from "@/components/ui/sheet";
 import { ToolDetailContent } from "@/components/chat/tool-detail-sheet";
-import type { ToolClickPayload } from "@/components/chat/types";
-import { isDynamicToolPart } from "@/components/chat/types";
 import type { ToolProgress } from "@/lib/tool-progress";
 import { FileEditorSheet } from "@/components/chat/file-editor-sheet";
+import { ToolProgressProvider } from "@/components/chat/tool-progress-context";
+import { ChatRuntimeProvider } from "@/components/chat/chat-runtime-provider";
+import { SubmitScheduleUI } from "@/components/chat/submit-schedule-ui";
+import { SheetContentProvider, type SheetContent } from "@/components/chat/sheet-context";
 import { cn } from "@/lib/utils";
-
-type SheetContent =
-  | { kind: "tool-detail"; toolName: string; input?: Record<string, unknown>; output?: string; error?: string; state?: ToolClickPayload["state"] }
-  | { kind: "file-editor"; filePath: string; projectId: string }
-  | null;
 
 interface ProjectChatProps {
   projectId: string;
@@ -35,73 +31,18 @@ function ProjectChat({ projectId, onProjectSelect }: ProjectChatProps) {
   const [sheetContent, setSheetContent] = useState<SheetContent>(null);
   const fileTreeRef = useRef<StoryFileTreeRef>(null);
 
-  const handleToolClick = useCallback(
-    (tool: ToolClickPayload) => {
-      setSheetContent({ kind: "tool-detail", ...tool });
-    },
-    [],
-  );
+  const api = useAui();
+  const isRunning = useAuiState((s) => s.thread.isRunning);
+  const status: ChatStatus = isRunning ? "streaming" : "ready";
 
-  const transport = useMemo(
-    () =>
-      new DefaultChatTransport({
-        api: "/api/narrative",
-        body: { projectId },
-      }),
-    [projectId],
-  );
-
-  const { messages, status, sendMessage, stop, setMessages, error, clearError } = useChat({
-    transport,
-    id: projectId,
-    experimental_throttle: 50,
-    onFinish: ({ messages: currentMessages }) => {
-      if (!projectId || currentMessages.length === 0) return;
-      fetch("/api/narrative", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId, messages: currentMessages }),
-      }).catch((err) => { console.error("[Chat] Failed to persist messages:", err); });
-      fileTreeRef.current?.refresh();
-    },
-    onError: (err) => {
-      console.error("[Chat] Stream error:", err);
-    },
+  useAuiEvent("thread.runEnd", () => {
+    fileTreeRef.current?.refresh();
   });
 
-  const persistMessages = useCallback((msgs: UIMessage[]) => {
-    if (!projectId || msgs.length === 0) return;
-    fetch("/api/narrative", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ projectId, messages: msgs }),
-    }).catch((err) => { console.error("[Chat] Failed to persist messages:", err); });
-  }, [projectId]);
-
   const handleStop = useCallback(() => {
-    const currentMessages = [...messages];
-    stop();
-    persistMessages(currentMessages);
+    api.thread().cancelRun();
     fileTreeRef.current?.refresh();
-  }, [messages, stop, persistMessages]);
-
-  function deriveSubmitScheduleActive(msgs: UIMessage[]): boolean {
-    for (const msg of msgs) {
-      for (const part of msg.parts) {
-        if (
-          isDynamicToolPart(part) &&
-          part.toolName === "submit_schedule" &&
-          part.state !== "output-available" &&
-          part.state !== "output-error"
-        ) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  const isActive = status === "streaming" && deriveSubmitScheduleActive(messages);
+  }, [api]);
 
   const [statusData, setStatusData] = useState<{
     sceneId?: string;
@@ -134,7 +75,7 @@ function ProjectChat({ projectId, onProjectSelect }: ProjectChatProps) {
     };
 
     poll();
-    const ms = isActive ? 1000 : 5000;
+    const ms = isRunning ? 1000 : 5000;
     intervalRef.current = setInterval(poll, ms);
 
     return () => {
@@ -143,29 +84,17 @@ function ProjectChat({ projectId, onProjectSelect }: ProjectChatProps) {
         intervalRef.current = null;
       }
     };
-  }, [projectId, isActive]);
-
-  useEffect(() => {
-    if (!projectId) return;
-    let cancelled = false;
-    fetch(`/api/narrative?projectId=${projectId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (!cancelled) setMessages(data.messages ?? []);
-      })
-      .catch((err) => {
-        console.error("[Chat] Failed to load history:", err);
-        if (!cancelled) setMessages([]);
-      });
-    return () => { cancelled = true; };
-  }, [projectId, setMessages]);
+  }, [projectId, isRunning]);
 
   const handleSend = useCallback(
     (text: string, _mentions: MentionData[]) => {
       if (!text.trim()) return;
-      sendMessage({ text });
+      api.thread().append({
+        role: "user",
+        content: [{ type: "text", text }],
+      });
     },
-    [sendMessage],
+    [api],
   );
 
   const handleProjectDelete = useCallback(
@@ -178,6 +107,8 @@ function ProjectChat({ projectId, onProjectSelect }: ProjectChatProps) {
   );
 
   return (
+    <SheetContentProvider setSheetContent={setSheetContent}>
+    <ToolProgressProvider toolProgress={statusData.toolProgress}>
     <div className="flex h-dvh flex-col bg-background text-foreground">
       <header className="flex shrink-0 items-center gap-3 px-4 py-3">
         <h1 className="text-lg font-semibold tracking-tight">自由剧场</h1>
@@ -202,13 +133,13 @@ function ProjectChat({ projectId, onProjectSelect }: ProjectChatProps) {
         </aside>
         <main className="flex min-h-0 flex-1 flex-col">
           <SceneIndicator sceneId={statusData.sceneId} location={statusData.location} />
-          <MessageList messages={messages} status={status} projectId={projectId} onToolClick={handleToolClick} error={error} onClearError={clearError} toolProgress={statusData.toolProgress} />
-          <ChatInput
+          <Thread
             projectId={projectId}
             onSend={handleSend}
             status={status}
             onStop={handleStop}
           />
+          <SubmitScheduleUI />
         </main>
       </div>
       <Sheet open={sheetContent !== null} onOpenChange={(open) => !open && setSheetContent(null)}>
@@ -238,6 +169,8 @@ function ProjectChat({ projectId, onProjectSelect }: ProjectChatProps) {
         </SheetContentUI>
       </Sheet>
     </div>
+    </ToolProgressProvider>
+    </SheetContentProvider>
   );
 }
 
@@ -258,10 +191,11 @@ export default function Home() {
   }
 
   return (
-    <ProjectChat
-      key={projectId}
-      projectId={projectId}
-      onProjectSelect={handleProjectSelect}
-    />
+    <ChatRuntimeProvider key={projectId} projectId={projectId}>
+      <ProjectChat
+        projectId={projectId}
+        onProjectSelect={handleProjectSelect}
+      />
+    </ChatRuntimeProvider>
   );
 }
