@@ -9,6 +9,7 @@ import {
   createTimelineAgent,
   createDebtsAgent,
 } from "@/agents/archivist/factory";
+import { assembleAndInject } from "@/context/chain/chain-runner";
 import type { ToolProgress } from "@/lib/tool-progress";
 
 type AnyRunResult = RunResult<any, any>;
@@ -46,7 +47,16 @@ async function runArchivistDag(
   totalSteps?: number,
   abortSignal?: AbortSignal,
 ): Promise<void> {
-  const charactersPrompt = `${narrativeSummary}\n\n## 文学文本\n${literaryText}`;
+  const archivistCtx = await assembleAndInject({
+    role: "archivist-characters",
+    storyDir,
+    runContext: { storyDir },
+  });
+  const ctxPrefix = archivistCtx.messages.length > 0
+    ? archivistCtx.messages.map((m) => `## ${m.label}\n${m.content}`).join("\n\n---\n\n") + "\n\n---\n\n"
+    : "";
+
+  const charactersPrompt = `${ctxPrefix}${narrativeSummary}\n\n## 文学文本\n${literaryText}`;
 
   const charactersAgent = createCharactersAgent(storyDir);
   const charStartTime = Date.now();
@@ -142,11 +152,20 @@ export async function runScribeAndArchivist(
   const startTime = Date.now();
   console.log(`[Pipeline] Scribe starting`);
 
+  const scribeCtx = await assembleAndInject({
+    role: "scribe",
+    storyDir,
+    runContext: { storyDir },
+  });
+  const scribeInput = scribeCtx.messages.length > 0
+    ? [...scribeCtx.messages.map((m) => `## ${m.label}\n${m.content}`), narrativeSummary].join("\n\n---\n\n")
+    : narrativeSummary;
+
   let scribeOutput = "";
   try {
     const scribeResult = await run(
       scribeAgent,
-      narrativeSummary,
+      scribeInput,
       {
         context: { storyDir },
         maxTurns: 25,

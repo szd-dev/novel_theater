@@ -9,6 +9,8 @@ import { readChatHistory, saveChatHistory } from '@/session/chat-history';
 import { getProject } from '@/project/manager';
 import { gmAgent } from '@/agents/registry';
 import { findTruncationPoint } from '@/lib/gm-truncation';
+import { assembleAndInject } from '@/context/chain/chain-runner';
+import { findLatestScene } from '@/context/extract';
 
 export const maxDuration = 60;
 
@@ -49,6 +51,16 @@ export async function POST(req: NextRequest) {
     const projectDir = project.dataDir;
     const storyDir = join(projectDir, '.novel');
     const storySession = getOrCreateStorySession(pid, projectDir);
+
+    const latestScene = await findLatestScene(storyDir);
+    const contextVersion = latestScene ?? "init";
+    await assembleAndInject({
+      role: "gm",
+      storyDir,
+      runContext: { storyDir, projectId, projectDir },
+      session: storySession.gmSession,
+      version: contextVersion,
+    });
 
     const lastUserMessage = messages.filter((m) => m.role === 'user').pop();
     const input = lastUserMessage

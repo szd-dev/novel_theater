@@ -3,76 +3,72 @@ import { getModel, getModelSettings } from "@/lib/models";
 import { readFileTool, writeFileTool, editFileTool, globFilesTool } from "@/tools/file-tools";
 import { resolveCharacterTool, listCharactersTool } from "@/tools/character-tools";
 import { getArchivistSubPrompt } from "@/prompts/archivist-sub";
-import { buildStoryContext } from "@/context/build-story-context";
 import type { ArchivistResponsibility } from "./types";
 
-function makeInstructions(resp: ArchivistResponsibility, storyDir: string) {
+function makeInstructions(resp: ArchivistResponsibility) {
   return async () => {
-    const storyContext = await buildStoryContext(storyDir);
-    return getArchivistSubPrompt(resp, {
-      storyContext: storyContext ?? undefined,
-    });
+    return getArchivistSubPrompt(resp, {});
   };
 }
 
 const archivistSettings = getModelSettings("archivist");
 
-export function createCharactersAgent(storyDir: string): Agent {
+export function createCharactersAgent(_storyDir: string): Agent {
   return new Agent({
     name: "archivist-characters",
     model: getModel("archivist"),
     modelSettings: archivistSettings,
-    instructions: makeInstructions("characters", storyDir),
+    instructions: makeInstructions("characters"),
     tools: [readFileTool, writeFileTool, editFileTool, globFilesTool, resolveCharacterTool, listCharactersTool],
   });
 }
 
-export function createSceneAgent(storyDir: string): Agent {
+export function createSceneAgent(_storyDir: string): Agent {
   return new Agent({
     name: "archivist-scene",
     model: getModel("archivist"),
     modelSettings: archivistSettings,
-    instructions: makeInstructions("scene", storyDir),
+    instructions: makeInstructions("scene"),
     tools: [readFileTool, editFileTool, globFilesTool],
   });
 }
 
-export function createWorldAgent(storyDir: string): Agent {
+export function createWorldAgent(_storyDir: string): Agent {
   return new Agent({
     name: "archivist-world",
     model: getModel("archivist"),
     modelSettings: archivistSettings,
-    instructions: makeInstructions("world", storyDir),
+    instructions: makeInstructions("world"),
     tools: [readFileTool, editFileTool, globFilesTool],
   });
 }
 
-export function createPlotAgent(storyDir: string): Agent {
+export function createPlotAgent(_storyDir: string): Agent {
   return new Agent({
     name: "archivist-plot",
     model: getModel("archivist"),
     modelSettings: archivistSettings,
-    instructions: makeInstructions("plot", storyDir),
+    instructions: makeInstructions("plot"),
     tools: [readFileTool, editFileTool, globFilesTool],
   });
 }
 
-export function createTimelineAgent(storyDir: string): Agent {
+export function createTimelineAgent(_storyDir: string): Agent {
   return new Agent({
     name: "archivist-timeline",
     model: getModel("archivist"),
     modelSettings: archivistSettings,
-    instructions: makeInstructions("timeline", storyDir),
+    instructions: makeInstructions("timeline"),
     tools: [readFileTool, editFileTool, globFilesTool],
   });
 }
 
-export function createDebtsAgent(storyDir: string): Agent {
+export function createDebtsAgent(_storyDir: string): Agent {
   return new Agent({
     name: "archivist-debts",
     model: getModel("archivist"),
     modelSettings: archivistSettings,
-    instructions: makeInstructions("debts", storyDir),
+    instructions: makeInstructions("debts"),
     tools: [readFileTool, editFileTool, globFilesTool],
   });
 }

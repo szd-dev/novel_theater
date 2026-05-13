@@ -9,6 +9,9 @@ const mockRun = jest.fn();
 const mockCreateSubSession = jest.fn();
 const mockClearInteractionLog = jest.fn();
 const mockAppendInteractionLog = jest.fn();
+const mockReadNovelFile = jest.fn();
+const mockAssembleAndInject = jest.fn();
+const mockFindLatestScene = jest.fn();
 
 mock.module("@openai/agents", () => ({
   run: mockRun,
@@ -22,6 +25,18 @@ mock.module("@/session/manager", () => ({
 mock.module("@/store/interaction-log", () => ({
   clearInteractionLog: mockClearInteractionLog,
   appendInteractionLog: mockAppendInteractionLog,
+}));
+
+mock.module("@/store/story-files", () => ({
+  readNovelFile: mockReadNovelFile,
+}));
+
+mock.module("@/context/chain/chain-runner", () => ({
+  assembleAndInject: mockAssembleAndInject,
+}));
+
+mock.module("@/context/extract", () => ({
+  findLatestScene: mockFindLatestScene,
 }));
 
 import { runEnactPhase } from "@/pipeline/enact-phase";
@@ -40,11 +55,17 @@ beforeEach(() => {
   mockCreateSubSession.mockReset();
   mockClearInteractionLog.mockReset();
   mockAppendInteractionLog.mockReset();
+  mockReadNovelFile.mockReset();
+  mockAssembleAndInject.mockReset();
+  mockFindLatestScene.mockReset();
 
   mockCreateSubSession.mockReturnValue({
     session: createMockSession(),
     sessionId: "sub-session-1",
   });
+  mockReadNovelFile.mockResolvedValue(null);
+  mockAssembleAndInject.mockResolvedValue({ messages: [], injected: false });
+  mockFindLatestScene.mockResolvedValue("s001.md");
 });
 
 describe("runEnactPhase", () => {

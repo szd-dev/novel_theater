@@ -12,18 +12,8 @@ export function getScribePrompt(
   return `${getAntiReviewPrefix()}${core}\n\n${stateBlock}`;
 }
 
-function buildScribeStateBlock(state: ScribePromptState): string {
-  const lines: string[] = ["## 当前任务", "", "请将本幕交互记录转为文学文本。"];
-
-  if (state.styleGuide) {
-    lines.push("", "## 风格指南", state.styleGuide);
-  }
-
-  if (state.storyContext) {
-    lines.push("", "## 故事上下文", state.storyContext);
-  }
-
-  return lines.join("\n");
+function buildScribeStateBlock(_state: ScribePromptState): string {
+  return "## 当前任务\n\n请将本幕交互记录转为文学文本。";
 }
 
 function buildScribeCore(_lang: string): string {

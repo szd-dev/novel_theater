@@ -8,23 +8,19 @@ export interface PromptConfig {
 }
 
 export interface GMPromptState {
-  storyContext?: string; // from buildStoryContext()
+  // reserved for future per-invocation state
 }
 
 export interface ActorPromptState {
-  /** Full character .md content */
-  characterFile?: string;
-  storyContext?: string; // from buildStoryContext()
+  // reserved for future per-invocation state
 }
 
 export interface ScribePromptState {
-  /** From style.md */
-  styleGuide?: string;
-  storyContext?: string; // from buildStoryContext()
+  // reserved for future per-invocation state
 }
 
 export interface ArchivistPromptState {
-  storyContext?: string; // from buildStoryContext()
+  // reserved for future per-invocation state
 }
 
 /** ANTI_REVIEW_PROMPT env var → prepended to all agent system prompts if non-empty */

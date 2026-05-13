@@ -15,14 +15,8 @@ export function getArchivistSubPrompt(
   return `${getAntiReviewPrefix()}${common}\n\n${specific}\n\n${stateBlock}`;
 }
 
-function buildStateBlock(state: ArchivistPromptState): string {
-  const lines: string[] = ["## 当前任务", "", "请根据用户消息中的叙事摘要和文学文本更新故事状态文件。"];
-
-  if (state.storyContext) {
-    lines.push("", "## 故事上下文", state.storyContext);
-  }
-
-  return lines.join("\n");
+function buildStateBlock(_state: ArchivistPromptState): string {
+  return "## 当前任务\n\n请根据用户消息中的叙事摘要和文学文本更新故事状态文件。";
 }
 
 function buildCommonPart(_lang: string): string {

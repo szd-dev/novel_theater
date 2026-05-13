@@ -13,10 +13,8 @@ export function getGMPrompt(
   return `${getAntiReviewPrefix()}${core}\n\n${stateBlock}`;
 }
 
-function buildStateBlock(state: GMPromptState): string {
-  const lines: string[] = ["## 当前状态"];
-  if (state.storyContext) lines.push(`\n## 故事上下文\n${state.storyContext}`);
-  return lines.join("\n");
+function buildStateBlock(_state: GMPromptState): string {
+  return "## 当前状态";
 }
 
 function buildCorePrompt(_lang: string): string {

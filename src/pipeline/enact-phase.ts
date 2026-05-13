@@ -1,8 +1,11 @@
 import { run } from "@openai/agents";
 import type { RunResult, Session } from "@openai/agents";
 import { clearInteractionLog, appendInteractionLog } from "@/store/interaction-log";
+import { readNovelFile } from "@/store/story-files";
 import { createSubSession } from "@/session/manager";
 import { actorAgent } from "@/agents/actor";
+import { assembleAndInject } from "@/context/chain/chain-runner";
+import { findLatestScene } from "@/context/extract";
 import type { ToolProgress } from "@/lib/tool-progress";
 
 type AnyRunResult = RunResult<any, any>;
@@ -80,6 +83,18 @@ export async function runEnactPhase(
         sessionEntry = { session: created.session, sessionId: created.sessionId };
         sessionCache.set(step.character, sessionEntry);
       }
+
+      const charFile = await readNovelFile(storyDir, `characters/${step.character}.md`);
+      const latestScene = await findLatestScene(storyDir);
+      await assembleAndInject({
+        role: "actor",
+        storyDir,
+        runContext: { storyDir, characterName: step.character },
+        session: sessionEntry.session,
+        version: `${latestScene ?? "init"}:${step.character}`,
+        characterName: step.character,
+        characterFile: charFile ?? undefined,
+      });
 
       const actorResult = await run(
         actorAgent,

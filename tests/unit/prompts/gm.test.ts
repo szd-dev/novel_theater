@@ -17,7 +17,7 @@ const FORBIDDEN_PATTERNS = [
   /state\.characterFile/,
 ];
 
-function checkNoForbiddenPatterns(output: string, label: string) {
+function checkNoForbiddenPatterns(output: string, _label: string) {
   for (const pattern of FORBIDDEN_PATTERNS) {
     expect(pattern.test(output)).toBe(false);
   }
@@ -34,26 +34,14 @@ describe("getGMPrompt", () => {
     expect(result).toContain("场景骨架");
   });
 
-  test("includes state block when provided", () => {
-    const state: GMPromptState = {
-      storyContext: "角色在酒馆中，场景s001",
-    };
+  test("no story context in prompt (moved to user messages)", () => {
+    const state: GMPromptState = {};
     const result = getGMPrompt(state);
-    expect(result).toContain("角色在酒馆中，场景s001");
-  });
-
-  test("includes story context when provided", () => {
-    const state: GMPromptState = {
-      storyContext: "角色在酒馆中",
-    };
-    const result = getGMPrompt(state);
-    expect(result).toContain("角色在酒馆中");
+    expect(result).not.toContain("## 故事上下文");
   });
 
   test("no forbidden patterns", () => {
-    const state: GMPromptState = {
-      storyContext: "测试上下文",
-    };
+    const state: GMPromptState = {};
     const result = getGMPrompt(state);
     checkNoForbiddenPatterns(result, "GM");
   });
@@ -84,7 +72,7 @@ describe("getGMPrompt", () => {
   });
 
   test("no LangGraph references", () => {
-    const state: GMPromptState = { storyContext: "测试" };
+    const state: GMPromptState = {};
     const result = getGMPrompt(state);
     expect(result).not.toMatch(/Command\(/);
     expect(result).not.toMatch(/LangGraph/);
@@ -96,7 +84,6 @@ describe("getGMPrompt", () => {
     const normal = getGMPrompt(state, { verbosity: "normal" });
     const detailed = getGMPrompt(state, { verbosity: "detailed" });
     const minimal = getGMPrompt(state, { verbosity: "minimal" });
-    // Verbosity no longer affects output — all tiers produce the same prompt
     expect(normal).toEqual(detailed);
     expect(normal).toEqual(minimal);
   });
@@ -140,38 +127,31 @@ describe("getActorPrompt", () => {
     expect(result).toContain("自由剧场 Actor");
   });
 
-  test("includes character file when provided", () => {
-    const state: ActorPromptState = {
-      characterFile: "# 艾蕾雅\n> 公主",
-    };
+  test("no character file in prompt (moved to user messages)", () => {
+    const state: ActorPromptState = {};
     const result = getActorPrompt("艾蕾雅", state);
-    expect(result).toContain("# 艾蕾雅");
-    expect(result).toContain("> 公主");
+    expect(result).not.toContain("## 角色文件");
+    expect(result).not.toContain("## 故事上下文");
   });
 
   test("no forbidden patterns", () => {
-    const state: ActorPromptState = {
-      characterFile: "内容",
-    };
+    const state: ActorPromptState = {};
     const result = getActorPrompt("角色", state);
     checkNoForbiddenPatterns(result, "Actor");
   });
 });
 
 describe("getScribePrompt", () => {
-  test("includes style guide when provided", () => {
-    const state: ScribePromptState = {
-      styleGuide: "古风叙事，第三人称",
-    };
+  test("no style guide in prompt (moved to user messages)", () => {
+    const state: ScribePromptState = {};
     const result = getScribePrompt(state);
-    expect(result).toContain("古风叙事，第三人称");
+    expect(result).not.toContain("## 风格指南");
+    expect(result).not.toContain("## 故事上下文");
     expect(result).toContain("自由剧场 Scribe");
   });
 
   test("no forbidden patterns", () => {
-    const state: ScribePromptState = {
-      styleGuide: "风格",
-    };
+    const state: ScribePromptState = {};
     const result = getScribePrompt(state);
     checkNoForbiddenPatterns(result, "Scribe");
   });

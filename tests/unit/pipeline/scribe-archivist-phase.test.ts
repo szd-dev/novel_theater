@@ -6,10 +6,15 @@ class MockAgent {
 }
 
 const mockRun = jest.fn();
+const mockAssembleAndInject = jest.fn();
 
 mock.module("@openai/agents", () => ({
   run: mockRun,
   Agent: MockAgent,
+}));
+
+mock.module("@/context/chain/chain-runner", () => ({
+  assembleAndInject: mockAssembleAndInject,
 }));
 
 const mockArchivistFactoryCreators = {
@@ -35,6 +40,7 @@ function createTestAgent(name: string): MockAgent {
 
 beforeEach(() => {
   mockRun.mockReset();
+  mockAssembleAndInject.mockReset();
   Object.values(mockArchivistFactoryCreators).forEach((fn) => fn.mockReset());
   mockArchivistFactoryCreators.createCharactersAgent.mockReturnValue(createTestAgent("archivist-characters"));
   mockArchivistFactoryCreators.createSceneAgent.mockReturnValue(createTestAgent("archivist-scene"));
@@ -43,6 +49,7 @@ beforeEach(() => {
   mockArchivistFactoryCreators.createTimelineAgent.mockReturnValue(createTestAgent("archivist-timeline"));
   mockArchivistFactoryCreators.createDebtsAgent.mockReturnValue(createTestAgent("archivist-debts"));
   mockRun.mockResolvedValue(createMockRunResult("default output"));
+  mockAssembleAndInject.mockResolvedValue({ messages: [], injected: false });
 });
 
 describe("runScribeAndArchivist", () => {
@@ -60,7 +67,7 @@ describe("runScribeAndArchivist", () => {
 
     const scribeCall = mockRun.mock.calls[0];
     expect(scribeCall[0].name).toBe("Scribe");
-    expect(scribeCall[1]).toBe("narrative summary");
+    expect(scribeCall[1]).toContain("narrative summary");
     expect(scribeCall[2]).toEqual({
       context: { storyDir: "/story" },
       maxTurns: 25,
@@ -73,7 +80,8 @@ describe("runScribeAndArchivist", () => {
     const characterCall = mockRun.mock.calls[1];
     expect(characterCall[0].name).toBe("archivist-characters");
     expect(characterCall[1]).toContain("narrative summary");
-    expect(characterCall[2]).toEqual({ context: { storyDir: "/story" } });
+    expect(characterCall[2].context).toEqual({ storyDir: "/story" });
+    expect(characterCall[2].maxTurns).toBe(10);
   });
 
   test("runs archivist parallel agents (Scene/World/Plot/Timeline) after characters", async () => {

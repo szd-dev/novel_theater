@@ -11,9 +11,7 @@ const COMMON_MARKERS = [
   "只记录，不创造信息",
 ];
 
-const STATE: ArchivistPromptState = {
-  storyContext: "场景总数: 1，当前场景: s001",
-};
+const STATE: ArchivistPromptState = {};
 
 describe("getArchivistSubPrompt", () => {
   test("returns a non-empty string for each responsibility", () => {
@@ -33,10 +31,10 @@ describe("getArchivistSubPrompt", () => {
     }
   });
 
-  test("includes story context when provided", () => {
+  test("no story context in prompt (moved to user messages)", () => {
     for (const resp of RESPONSIBILITIES) {
       const result = getArchivistSubPrompt(resp, STATE);
-      expect(result).toContain("场景总数: 1，当前场景: s001");
+      expect(result).not.toContain("## 故事上下文");
     }
   });
 
@@ -103,7 +101,6 @@ describe("getArchivistSubPrompt", () => {
     expect(result).toContain("debts.md");
     expect(result).toContain("叙事债务");
     expect(result).toContain("显式承诺");
-    expect(result).toContain("信息缺口");
     expect(result).toContain("未解悬念");
     expect(result).toContain("未闭环因果");
   });

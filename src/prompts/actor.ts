@@ -13,18 +13,8 @@ export function getActorPrompt(
   return `${getAntiReviewPrefix()}${core}\n\n${stateBlock}`;
 }
 
-function buildActorStateBlock(character: string, state: ActorPromptState): string {
-  const lines: string[] = [`## 当前任务`, ``, `你被 GM 调用，请附体角色：**${character}**`];
-
-  if (state.characterFile) {
-    lines.push("", "## 角色文件", state.characterFile);
-  }
-  if (state.storyContext) {
-    lines.push("", "## 故事上下文", state.storyContext);
-  }
-
-
-  return lines.join("\n");
+function buildActorStateBlock(character: string, _state: ActorPromptState): string {
+  return `## 当前任务\n\n你被 GM 调用，请附体角色：**${character}**`;
 }
 
 function buildActorCore(_lang: string): string {

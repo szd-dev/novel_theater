@@ -83,7 +83,7 @@ export const Thread: FC<ThreadProps> = ({ projectId, onSend, status, onStop }) =
       }}
     >
       <ThreadPrimitive.Viewport
-        turnAnchor="top"
+        turnAnchor="bottom"
         data-slot="aui_thread-viewport"
         className="relative flex flex-1 flex-col overflow-x-auto overflow-y-scroll scroll-smooth"
       >
