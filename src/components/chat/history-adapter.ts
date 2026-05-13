@@ -56,14 +56,12 @@ export function createHistoryAdapter(projectId: string): ThreadHistoryAdapter {
         },
         async append(item: MessageFormatItem<TMessage>): Promise<void> {
           try {
-            // Fetch existing messages
             const res = await fetch(
               `/api/narrative?projectId=${encodeURIComponent(projectId)}`,
             );
             const data = await res.json();
             const existingMessages: UIMessage[] = data.messages ?? [];
 
-            // Decode the new item to get the UIMessage
             const decoded = fmt.decode({
               id: fmt.getId(item.message),
               parent_id: item.parentId,
@@ -71,8 +69,10 @@ export function createHistoryAdapter(projectId: string): ThreadHistoryAdapter {
               content: fmt.encode(item),
             });
 
-            // Append and save
-            existingMessages.push(decoded.message as unknown as UIMessage);
+            const newMsg = decoded.message as unknown as UIMessage;
+            if (existingMessages.some((m) => m.id === newMsg.id)) return;
+
+            existingMessages.push(newMsg);
 
             await fetch("/api/narrative", {
               method: "PUT",

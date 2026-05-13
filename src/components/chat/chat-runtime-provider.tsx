@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { AssistantRuntimeProvider } from "@assistant-ui/react";
 import { useChatRuntime, AssistantChatTransport } from "@assistant-ui/react-ai-sdk";
 import type { UIMessage } from "ai";
-import { createHistoryAdapter } from "./history-adapter";
 import { fixToolErrorStates } from "@/lib/fix-tool-errors";
 
 interface ChatRuntimeProviderProps {
@@ -26,8 +25,6 @@ function ChatRuntimeProviderInner({
     [projectId],
   );
 
-  const history = useMemo(() => createHistoryAdapter(projectId), [projectId]);
-
   const handleError = useCallback((err: Error) => {
     console.error("[Chat] Stream error:", err);
   }, []);
@@ -35,7 +32,14 @@ function ChatRuntimeProviderInner({
   const runtime = useChatRuntime({
     transport,
     messages: initialMessages,
-    adapters: { history },
+    onFinish: ({ messages: currentMessages }) => {
+      if (!projectId || currentMessages.length === 0) return;
+      fetch("/api/narrative", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId, messages: currentMessages }),
+      }).catch((err) => { console.error("[Chat] Failed to persist messages:", err); });
+    },
     onError: handleError,
   });
 

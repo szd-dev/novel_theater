@@ -101,6 +101,8 @@ export const Thread: FC<ThreadProps> = ({ projectId, onSend, status, onStop }) =
             </ThreadPrimitive.Messages>
           </div>
 
+          <ThreadRunningIndicator />
+
           <ThreadPrimitive.ViewportFooter className="aui-thread-viewport-footer sticky bottom-0 mt-auto flex flex-col gap-4 overflow-visible rounded-t-(--composer-radius) bg-background pb-4 md:pb-6">
             <ThreadScrollToBottom />
             <ChatInput projectId={projectId} onSend={onSend} status={status} onStop={onStop} />
@@ -123,6 +125,21 @@ const ThreadMessage: FC = () => {
 const ThreadScrollToBottom: FC = () => {
   return (
     <ThreadPrimitive.ScrollToBottom render={<TooltipIconButton tooltip="Scroll to bottom" variant="outline" className="aui-thread-scroll-to-bottom absolute -top-12 z-10 self-center rounded-full p-4 disabled:invisible dark:border-border dark:bg-background dark:hover:bg-accent" />}><ArrowDownIcon /></ThreadPrimitive.ScrollToBottom>
+  );
+};
+
+const ThreadRunningIndicator: FC = () => {
+  const isRunning = useAuiState((s) => s.thread.isRunning);
+  if (!isRunning) return null;
+
+  return (
+    <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
+      <span className="relative flex size-2">
+        <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+        <span className="inline-flex size-full rounded-full bg-emerald-500" />
+      </span>
+      <span>处理中…</span>
+    </div>
   );
 };
 

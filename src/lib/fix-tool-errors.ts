@@ -14,10 +14,11 @@ import type { UIMessage } from "ai";
  *
  * This function corrects the state field by inspecting the output content,
  * ensuring that parts with error-shaped outputs get `state: "output-error"`
- * and `errorText` populated.
+ * and `errorText` populated. Also deduplicates messages by id (keeps last).
  */
 export function fixToolErrorStates(messages: UIMessage[]): UIMessage[] {
-  return messages.map((msg) => {
+  const deduped = deduplicateById(messages);
+  return deduped.map((msg) => {
     if (!msg.parts) return msg;
 
     let needsFix = false;
@@ -60,4 +61,17 @@ function parseOutputError(output: string): string | null {
     }
   } catch {}
   return null;
+}
+
+function deduplicateById(messages: UIMessage[]): UIMessage[] {
+  const seen = new Set<string>();
+  const result: UIMessage[] = [];
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const id = messages[i].id;
+    if (!seen.has(id)) {
+      seen.add(id);
+      result.unshift(messages[i]);
+    }
+  }
+  return result;
 }
