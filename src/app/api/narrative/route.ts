@@ -2,7 +2,7 @@ import { join } from 'node:path';
 import type { UIMessage } from 'ai';
 import { NextRequest, NextResponse } from 'next/server';
 import { run } from '@openai/agents';
-import { createAiSdkUiMessageStreamResponse } from '@openai/agents-extensions/ai-sdk-ui';
+import { createAiSdkUiMessageStreamResponse } from '@/lib/ai-sdk-stream';
 
 import { getOrCreateStorySession } from '@/session/manager';
 import { readChatHistory, saveChatHistory } from '@/session/chat-history';

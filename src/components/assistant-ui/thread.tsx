@@ -251,8 +251,12 @@ const AssistantMessage: FC = () => {
               );
             }
 
-            if (rawType === "dynamic-tool") {
-              const toolName = (part as Record<string, unknown>).toolName as string | undefined;
+            if (rawType === "dynamic-tool" || rawType === "data-dynamic-tool") {
+              // These part types don't reach the rendering layer —
+              // AISDKMessageConverter converts all tool parts to "tool-call".
+              // Keeping this as a safety net in case the conversion changes.
+              const toolName = (part as Record<string, unknown>).toolName as string | undefined
+                ?? ((part as Record<string, unknown>).data as Record<string, unknown> | undefined)?.toolName as string | undefined;
               const agent = toolName
                 ? toolNameToAgentKey(toolName)
                 : agentRef.current;
@@ -260,38 +264,10 @@ const AssistantMessage: FC = () => {
               agentRef.current = agent;
               return (
                 <div className="flex flex-col gap-1">
-                  {changed && (
-                    <AgentLabel agent={agent} />
-                  )}
+                  {changed && <AgentLabel agent={agent} />}
                   <DynamicToolDisplay
                     dp={part as unknown as DynamicToolPart}
                   />
-                </div>
-              );
-            }
-
-            if (rawType === "data-dynamic-tool") {
-              const data = (part as Record<string, unknown>).data as
-                | Record<string, unknown>
-                | undefined;
-              const toolName = data?.toolName as string | undefined;
-              const agent = toolName
-                ? toolNameToAgentKey(toolName)
-                : agentRef.current;
-              const changed = agent !== agentRef.current;
-              agentRef.current = agent;
-              return (
-                <div className="flex flex-col gap-1.5">
-                  {changed && (
-                    <div className="flex items-center gap-2">
-                      <AgentLabel agent={agent} />
-                      {toolName && (
-                        <span className="text-muted-foreground text-xs">
-                          {toolName}
-                        </span>
-                      )}
-                    </div>
-                  )}
                 </div>
               );
             }
@@ -305,7 +281,38 @@ const AssistantMessage: FC = () => {
             }
 
             if (part.type === "tool-call") {
-              return part.toolUI ?? <ToolFallback {...part} />;
+              const tc = part as Record<string, unknown>;
+              const toolName = tc.toolName as string | undefined;
+              const isError = tc.isError === true;
+              const isRunning = !isError && tc.result === undefined;
+              const dp: DynamicToolPart = {
+                type: "dynamic-tool",
+                toolName,
+                state: isError
+                  ? "output-error"
+                  : isRunning
+                    ? "input-available"
+                    : "output-available",
+                errorText: isError
+                  ? typeof tc.result === "object" && tc.result !== null && "error" in (tc.result as Record<string, unknown>)
+                    ? String((tc.result as Record<string, unknown>).error)
+                    : undefined
+                  : undefined,
+                toolCallId: tc.toolCallId as string | undefined,
+                input: tc.args as Record<string, unknown> | undefined,
+                output: !isError && !isRunning ? tc.result as string | undefined : undefined,
+              };
+              const agent = toolName
+                ? toolNameToAgentKey(toolName)
+                : agentRef.current;
+              const changed = agent !== agentRef.current;
+              agentRef.current = agent;
+              return (
+                <div className="flex flex-col gap-1">
+                  {changed && <AgentLabel agent={agent} />}
+                  <DynamicToolDisplay dp={dp} />
+                </div>
+              );
             }
 
             return null;
