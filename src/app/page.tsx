@@ -116,7 +116,7 @@ function ProjectChat({ projectId, onProjectSelect }: ProjectChatProps) {
       </header>
       <Separator />
       <div className="flex min-h-0 flex-1 flex-row">
-        <aside className="bg-sidebar text-sidebar-foreground flex min-h-0 w-56 shrink-0 flex-col gap-2 overflow-hidden border-r border-sidebar-border py-2">
+        <aside className="bg-background text-foreground flex min-h-0 w-56 shrink-0 flex-col gap-2 overflow-hidden border-r border-sidebar-border py-2">
           <ProjectSelector
             currentProjectId={projectId}
             onProjectSelect={onProjectSelect}
@@ -148,7 +148,7 @@ function ProjectChat({ projectId, onProjectSelect }: ProjectChatProps) {
           className={cn(
             sheetContent?.kind === "file-editor"
               ? "!w-[800px] sm:!max-w-[800px]"
-              : "w-[400px] sm:max-w-[400px]",
+              : "!w-[800px] sm:!max-w-[800px]",
           )}
         >
           {sheetContent?.kind === "tool-detail" && (

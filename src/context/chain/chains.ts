@@ -41,21 +41,18 @@ export function createActorChain(): ContextHandler {
 
 export function createScribeChain(): ContextHandler {
   const chain = new StyleGuideHandler();
-  chain.setNext(new PreviousSceneHandler())
-    .setNext(new CharacterL0Handler())
+  chain.setNext(new CharacterL0Handler())
     .setNext(new SceneContextHandler())
     .setNext(new SceneLocationHandler())
-    .setNext(new PlotDirectionHandler())
-    .setNext(new DirectivesHandler());
+    .setNext(new DirectivesHandler())
+    .setNext(new InteractionLogHandler());
   return chain;
 }
 
 export function createArchivistChain(): ContextHandler {
-  const chain = new PreviousSceneHandler();
-  chain.setNext(new CharacterL0Handler())
-    .setNext(new SceneContextHandler())
+  const chain = new CharacterL0Handler();
+  chain.setNext(new SceneContextHandler())
     .setNext(new SceneLocationHandler())
-    .setNext(new PlotDirectionHandler())
     .setNext(new DirectivesHandler());
   return chain;
 }

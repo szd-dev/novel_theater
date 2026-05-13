@@ -96,8 +96,25 @@ GM 和 Archivist 使用 Qwen（强 Agent / 工具调用能力），Actor 和 Scr
 
 ## 核心设计
 
+- **责任链上下文注入**：角色身份写入 system_prompt，故事上下文通过责任链组装为 user_prompt 注入 session，按角色灵活组合 Handler：
+
+| Handler | 注入内容 | GM | Actor | Scribe | Archivist |
+|---------|----------|:--:|:-----:|:------:|:---------:|
+| SceneProgressHandler | 故事进度（场景总数 + 当前场景 ID） | ✓ | | | |
+| PreviousSceneHandler | 前序场景摘要 + 关键事实 | ✓ | ✓ | | |
+| CharacterL0Handler | 在场角色 L0 标签 | ✓ | ✓ | ✓ | ✓ |
+| SceneContextHandler | 当前场景全文 | ✓ | ✓ | ✓ | ✓ |
+| SceneLocationHandler | 场景地点描述 | ✓ | ✓ | ✓ | ✓ |
+| OtherCharacterL0Handler | 已知但不在场角色 L0 | ✓ | | | |
+| PlotDirectionHandler | 剧情主线方向 | ✓ | | | |
+| CharacterL1Handler | 在场角色详细信息 | ✓ | ✓ | | |
+| CharacterFileHandler | Actor 角色完整文件 | | ✓ | | |
+| StyleGuideHandler | 风格指南 | | | ✓ | |
+| DirectivesHandler | 作者指令 | ✓ | ✓ | ✓ | ✓ |
+| InteractionLogHandler | 本幕交互记录 | | ✓ | ✓ | |
+| FileDirectoryHandler | .novel/ 目录结构 | ✓ | | | |
+
 - **Agent-as-Tool 协作**：GM 通过 `call_actor` / `call_scribe` / `call_archivist` 工具调度子智能体，保持中央控制
-- **优先级上下文注入**：在场角色(0) > 当前场景(1) > 场景地点(1) > 已知角色(2) > 剧情方向(2) > 角色详情(4)，2000 token 预算自动截断
 - **交互记录**：Actor 输出自动追加到 `.working/latest-interaction.md`，场景结束后由 GM 调用 `clear_interaction_log` 清除
 - **Archivist 闭环**：场景结束后自动更新角色、世界、剧情、时间线文件，下一轮通过上下文注入反馈给所有智能体
 - **文件会话持久化**：`FileSession` 将对话历史写入磁盘（原子写入），支持进程重启后会话恢复和子智能体会话复用
