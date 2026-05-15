@@ -17,8 +17,10 @@ async function findContextSentinel(
   const items = await session.getItems();
   const prefix = `${SENTINEL_PREFIX}${role}:`;
 
-  for (const item of items) {
-    const i = item as Record<string, unknown>;
+  // Search from the end to find the most recent context sentinel,
+  // not the oldest one (which would cause false re-injection).
+  for (let idx = items.length - 1; idx >= 0; idx--) {
+    const i = items[idx] as Record<string, unknown>;
     if (i.role === "user" && typeof i.content === "string") {
       const text = (i.content as string).trim();
       if (text.startsWith(prefix)) {
