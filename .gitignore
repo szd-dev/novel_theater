@@ -51,3 +51,5 @@ next-env.d.ts
 .sisyphus/run-continuation
 .sisyphus/drafts
 test-results
+
+nohup.out
