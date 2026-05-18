@@ -1,9 +1,9 @@
 import { tool } from '@openai/agents';
 import { z } from 'zod';
+import { multiSearchReplaceService } from 'diff-apply';
 import { readNovelFile, writeNovelFile, globNovelFiles } from '@/store/story-files';
 import { toolResult, toolError } from '@/lib/tool-result';
 import { isSafePath, isValidCharacterFile, isValidSceneFile, isDirectivesPath, isAllowedFilePath } from '@/lib/validation';
-import { findAndReplace } from '@/lib/search-replace';
 import { findLatestScene } from '@/context/extract';
 
 export { isSafePath } from '@/lib/validation';
@@ -98,11 +98,35 @@ export const writeFileTool = tool({
 
 export const editFileTool = tool({
   name: 'edit_file',
-  description: 'Edit a file in the .novel/ story directory by replacing a search string with a replacement string. Reads the file, performs replacement, and writes back.',
+  description: `Edit a file in the .novel/ story directory using search-and-replace blocks. Supports one or more replacements per call.
+
+The engine handles minor whitespace and indentation differences automatically — you do not need to match byte-for-byte. But provide enough surrounding context lines to uniquely identify the target location.
+
+Parameters:
+- path: Relative path within .novel/, e.g. "scenes/s003.md" or "characters/林黛玉.md"
+- diff: One or more search/replace blocks in this format:
+
+<<<<<<< SEARCH
+[content to find]
+=======
+[replacement content]
+>>>>>>> REPLACE
+
+For multiple edits in one call, chain multiple blocks. Optional: add :start_line: N and :end_line: N on lines inside the SEARCH block as line number hints.
+
+Example (single edit):
+<<<<<<< SEARCH
+## 当前状态
+心情忧郁
+=======
+## 当前状态
+心情好转
+>>>>>>> REPLACE
+
+On failure: the error message includes a similarity score and debug information. Use this to retry with adjusted search content.`,
   parameters: z.object({
     path: z.string().describe('Relative path within .novel/'),
-    search: z.string().describe('The exact string to find and replace'),
-    replace: z.string().describe('The replacement string'),
+    diff: z.string().describe('One or more search/replace blocks. Format: <<<<<<< SEARCH\\n[content to find]\\n=======\\n[replacement]\\n>>>>>>> REPLACE. Chain multiple blocks for batch edits.'),
   }),
   execute: async (input, context) => {
     const storyDir = getStoryDir(context);
@@ -123,11 +147,17 @@ export const editFileTool = tool({
     if (content === null) {
       return toolError(`File not found: ${input.path}`);
     }
-    const matchResult = findAndReplace(content, input.search, input.replace);
-    if (!matchResult.success) {
-      return toolError(matchResult.error);
+    const result = multiSearchReplaceService.multiSearchReplaceService.applyDiff({
+      originalContent: content,
+      diffContent: input.diff,
+      fuzzyThreshold: 0.8,
+    });
+    if (!result.success) {
+      const failResult = result as { error?: string; failParts?: Array<{ error?: string }> };
+      const errorMsg = failResult.error || failResult.failParts?.[0]?.error || '编辑失败';
+      return toolError(errorMsg);
     }
-    const newContent = matchResult.result;
+    const newContent = result.content;
     if (input.path.startsWith('characters/') && !isValidCharacterFile(newContent)) {
       return toolError('Invalid character file content after edit. Character files must start with "# Name" heading and have a "> " L0 line.');
     }
@@ -135,7 +165,7 @@ export const editFileTool = tool({
       return toolError('Invalid scene file content after edit. Scene files must include sections: ## 地点, ## 时间, ## 在场角色, ## 初始剧本, ## 经过.');
     }
     await writeNovelFile(storyDir, input.path, newContent);
-    return toolResult(`Successfully edited ${input.path} (${matchResult.strategy})`);
+    return toolResult(`Successfully edited ${input.path}`);
   },
 });
 

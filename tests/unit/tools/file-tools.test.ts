@@ -33,7 +33,10 @@ describe('editFileTool post-edit re-validation', () => {
     const rc = makeRunContext(tempDir);
     const result = await editFileTool.invoke(
       rc,
-      JSON.stringify({ path: 'characters/林黛玉.md', search: '# 林黛玉', replace: '林黛玉' }),
+      JSON.stringify({
+        path: 'characters/林黛玉.md',
+        diff: '<<<<<<< SEARCH\n# 林黛玉\n=======\n林黛玉\n>>>>>>> REPLACE',
+      }),
     );
 
     expect(result).toContain('Invalid character file content');
@@ -52,7 +55,10 @@ describe('editFileTool post-edit re-validation', () => {
     const rc = makeRunContext(tempDir);
     const result = await editFileTool.invoke(
       rc,
-      JSON.stringify({ path: 'scenes/scene-001.md', search: '## 经过', replace: '经过' }),
+      JSON.stringify({
+        path: 'scenes/scene-001.md',
+        diff: '<<<<<<< SEARCH\n## 经过\n=======\n经过\n>>>>>>> REPLACE',
+      }),
     );
 
     expect(result).toContain('Invalid scene file content');
@@ -70,7 +76,10 @@ describe('editFileTool post-edit re-validation', () => {
     const rc = makeRunContext(tempDir);
     const result = await editFileTool.invoke(
       rc,
-      JSON.stringify({ path: 'characters/贾宝玉.md', search: '> 宝玉初见黛玉', replace: '> 宝玉与黛玉结缘' }),
+      JSON.stringify({
+        path: 'characters/贾宝玉.md',
+        diff: '<<<<<<< SEARCH\n> 宝玉初见黛玉\n=======\n> 宝玉与黛玉结缘\n>>>>>>> REPLACE',
+      }),
     );
 
     expect(result).toContain('Successfully edited');
@@ -95,7 +104,10 @@ describe('directives path blocking', () => {
     const rc = makeRunContext(tempDir);
     const result = await editFileTool.invoke(
       rc,
-      JSON.stringify({ path: 'characters/test.directives.md', search: 'a', replace: 'b' }),
+      JSON.stringify({
+        path: 'characters/test.directives.md',
+        diff: '<<<<<<< SEARCH\na\n=======\nb\n>>>>>>> REPLACE',
+      }),
     );
 
     expect(result).toContain('作者指令文件仅限手动编辑');
@@ -132,7 +144,10 @@ describe('disallowed path blocking', () => {
     const rc = makeRunContext(tempDir);
     const result = await editFileTool.invoke(
       rc,
-      JSON.stringify({ path: '.working/test.md', search: 'a', replace: 'b' }),
+      JSON.stringify({
+        path: '.working/test.md',
+        diff: '<<<<<<< SEARCH\na\n=======\nb\n>>>>>>> REPLACE',
+      }),
     );
 
     expect(result).toContain('Unsafe path');
@@ -182,7 +197,10 @@ describe('disallowed path blocking', () => {
     const rc = makeRunContext(tempDir);
     const result = await editFileTool.invoke(
       rc,
-      JSON.stringify({ path: 'notes.txt', search: 'a', replace: 'b' }),
+      JSON.stringify({
+        path: 'notes.txt',
+        diff: '<<<<<<< SEARCH\na\n=======\nb\n>>>>>>> REPLACE',
+      }),
     );
 
     expect(result).toContain('Disallowed file path');
